@@ -21,22 +21,10 @@ jobs:
       - name: Install k3d
         run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
-      - name: Create k3d cluster
+      - name: Create k3d cluster and build images
         run: bash e2e/setup.sh
 
-      - name: Build images
-        run: |
-          docker build -t ghcr.io/noflowwater/edge-metrics-server:e2e server/
-          docker build -t ghcr.io/noflowwater/edge-metrics-exporter:e2e exporter/
-          docker build -t ghcr.io/noflowwater/edge-metrics-front:e2e front/
-
-      - name: Import images to k3d
-        run: |
-          k3d image import ghcr.io/noflowwater/edge-metrics-server:e2e -c edge-metrics-e2e
-          k3d image import ghcr.io/noflowwater/edge-metrics-exporter:e2e -c edge-metrics-e2e
-          k3d image import ghcr.io/noflowwater/edge-metrics-front:e2e -c edge-metrics-e2e
-
-      - name: Helm install
+      - name: Helm install and smoke test
         run: bash e2e/test_install.sh
 
       - name: Run e2e tests
