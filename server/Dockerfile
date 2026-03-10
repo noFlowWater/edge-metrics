@@ -21,7 +21,7 @@ COPY . .
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags="-s -w" -o edge-metrics-server .
 
 # Stage 2: Runtime stage
-FROM alpine:3.21
+FROM alpine:3.23
 LABEL org.opencontainers.image.source="https://github.com/noFlowWater/edge-metrics"
 
 # Install runtime dependencies
