@@ -22,6 +22,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags="-s -w" -o 
 
 # Stage 2: Runtime stage
 FROM alpine:3.21
+LABEL org.opencontainers.image.source="https://github.com/noFlowWater/edge-metrics"
 
 # Install runtime dependencies
 RUN apk --no-cache add \
