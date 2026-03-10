@@ -1,6 +1,6 @@
 # Multi-stage build for edge-metrics-server
 # Stage 1: Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 # Install build dependencies for CGO (SQLite3 requires CGO)
 RUN apk add --no-cache \
