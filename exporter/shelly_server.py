@@ -59,13 +59,12 @@ class ShellyWebSocketHandler:
         self.pending_requests = {}  # {request_id: asyncio.Future}
         self.logger = logging.getLogger("ShellyWebSocketHandler")
 
-    async def handle_connection(self, websocket, path):
+    async def handle_connection(self, websocket):
         """
         WebSocket 연결 처리 메인 루프
 
         Args:
             websocket: WebSocket 연결 객체
-            path: 연결 경로 (사용 안 함)
         """
         device_id = None
         remote_addr = websocket.remote_address
