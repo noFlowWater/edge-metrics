@@ -1,0 +1,21 @@
+Edge Metrics Server has been deployed to namespace {{ .Release.Namespace }}.
+
+1. Access the server API:
+   kubectl port-forward svc/{{ include "server.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+   curl http://localhost:{{ .Values.service.port }}/health
+
+2. View all registered devices:
+   curl http://localhost:{{ .Values.service.port }}/devices
+
+{{- if .Values.serviceMonitor.enabled }}
+
+3. ServiceMonitor is ENABLED — Prometheus will scrape at {{ .Values.serviceMonitor.interval }} interval.
+{{- else }}
+
+3. ServiceMonitor is DISABLED. Enable with: --set server.serviceMonitor.enabled=true
+{{- end }}
+
+{{- if .Values.prometheusRule.enabled }}
+
+4. PrometheusRule is ENABLED — 5 alert rules active.
+{{- end }}

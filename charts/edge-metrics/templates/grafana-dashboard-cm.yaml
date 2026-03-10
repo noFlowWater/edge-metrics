@@ -1,0 +1,17 @@
+{{- if (index .Values "server" "grafanaDashboard" "enabled" | default false) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-grafana-dashboards
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: edge-metrics
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  edge-metrics-overview.json: |-
+{{ .Files.Get "dashboards/overview.json" | indent 4 }}
+  edge-metrics-device-detail.json: |-
+{{ .Files.Get "dashboards/device-detail.json" | indent 4 }}
+  edge-metrics-power-analysis.json: |-
+{{ .Files.Get "dashboards/power-analysis.json" | indent 4 }}
+{{- end }}

@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edge-metrics-server
+  namespace: monitoring
+  labels:
+    app: edge-metrics-server
+spec:
+  # ClusterIP: 클러스터 내부에서만 접근 (기본, 프로덕션 권장)
+  type: NodePort
+  # NodePort: 클러스터 외부에서 <NodeIP>:<NodePort>로 접근 (테스트/개발용)
+  # type: NodePort
+  ports:
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: http
+    # NodePort 사용 시 특정 포트 지정 (30000-32767 범위)
+    nodePort: 30081
+  selector:
+    app: edge-metrics-server

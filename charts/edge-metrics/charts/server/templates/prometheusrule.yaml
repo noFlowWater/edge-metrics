@@ -1,0 +1,52 @@
+{{- if .Values.prometheusRule.enabled -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "server.fullname" . }}
+  labels:
+    {{- include "server.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: edge-metrics.rules
+      rules:
+        - alert: ExporterDown
+          expr: up{job=~".*exporter.*"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Edge exporter {{ "{{" }} $labels.instance {{ "}}" }} is down"
+            description: "Exporter has been unreachable for more than 5 minutes."
+        - alert: ServerCrashLoop
+          expr: increase(kube_pod_container_status_restarts_total{container="server", namespace="{{ .Release.Namespace }}"}[1h]) > 3
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Edge metrics server is crash-looping"
+            description: "Server pod has restarted more than 3 times in the last hour."
+        - alert: DeviceUnreachable
+          expr: edge_device_consecutive_failures > 3
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Device {{ "{{" }} $labels.device_id {{ "}}" }} is unreachable"
+            description: "Device health check has failed 3+ consecutive times."
+        - alert: HighGPUTemp
+          expr: jetson_temp_gpu_celsius > 85
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High GPU temperature on {{ "{{" }} $labels.hostname {{ "}}" }}"
+            description: "GPU temperature is {{ "{{" }} $value {{ "}}" }}°C (threshold 85°C)."
+        - alert: PowerAnomaly
+          expr: abs(delta(shelly_power_watts[5m])) > 20
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Power anomaly detected on {{ "{{" }} $labels.hostname {{ "}}" }}"
+            description: "Power draw changed by more than 20W in 5 minutes."
+{{- end }}

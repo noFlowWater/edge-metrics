@@ -1,0 +1,69 @@
+# Cluster-specific overrides for current edge cluster deployment
+# Images: use existing registry images (not ghcr.io)
+
+server:
+  enabled: true
+  grafanaDashboard:
+    enabled: true
+  image:
+    repository: daclab/edge-metrics-server
+    tag: "v0.2.1"
+  env:
+    DB_PATH: /data/config.db
+    PORT: "8081"
+    SYNC_INTERVAL: "0"
+    SYNC_NAMESPACE: monitoring
+    SEED_DEVICES: '[{"device_id":"lattepanda-3-delta","device_type":"lattepanda","ip_address":"155.230.34.144"},{"device_id":"raspberrypi-5","device_type":"raspberry_pi","ip_address":"155.230.34.243"},{"device_id":"orangepi-5-plus","device_type":"orange_pi","ip_address":"155.230.34.143"},{"device_id":"jetsono","device_type":"jetson_orin","ip_address":"155.230.34.203"},{"device_id":"jetson-nano","device_type":"jetson_nano","ip_address":"155.230.35.199"},{"device_id":"jetsonx","device_type":"jetson_orin","ip_address":"155.230.34.205"}]'
+  podSecurityContext:
+    fsGroup: 1000
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsNonRoot: false
+    allowPrivilegeEscalation: false
+  persistence:
+    enabled: true
+    size: 256Mi
+  serviceMonitor:
+    enabled: true
+
+exporter:
+  enabled: true
+  image:
+    repository: daclab/edge-metrics-exporter
+    tag: "v1.1.2"
+  commonEnv:
+    CONFIG_SERVER_URL: "http://edge-metrics-server.monitoring.svc.cluster.local:8081"
+    METRICS_PORT: "9102"
+    RELOAD_PORT: "9101"
+    DEVICE_TYPE_MAP: '{"lattepanda-3-delta":"lattepanda","raspberrypi-5":"raspberry_pi","orangepi-5-plus":"orange_pi","jetsono":"jetson_orin","jetson-nano":"jetson_nano","jetsonx":"jetson_orin"}'
+  tolerations:
+    - key: node-role.kubernetes.io/edge
+      effect: NoSchedule
+  profiles:
+    jetson:
+      enabled: true
+      securityContext:
+        runAsUser: 0
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+        allowPrivilegeEscalation: true
+        capabilities:
+          add: ["SYS_RAWIO"]
+    generic:
+      enabled: true
+      securityContext:
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+        allowPrivilegeEscalation: false
+  serviceMonitor:
+    enabled: true
+
+frontend:
+  enabled: true
+  image:
+    repository: noyusu/edge-metrics-front
+    tag: "v0.1.3"
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsNonRoot: false
+    allowPrivilegeEscalation: false

@@ -1,0 +1,74 @@
+suite: server deployment
+templates:
+  - deployment.yaml
+tests:
+  - it: should be a Deployment with Recreate strategy
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should use emptyDir by default when persistence is disabled
+    set:
+      persistence.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].name
+          value: data
+      - isNotNull:
+          path: spec.template.spec.volumes[0].emptyDir
+
+  - it: should use PVC when persistence is enabled
+    set:
+      persistence.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].name
+          value: data
+      - isNotNull:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim
+
+  - it: should use correct image tag
+    set:
+      image.tag: "v1.2.3"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ":v1\\.2\\.3$"
+
+  - it: should use appVersion when tag is empty
+    set:
+      image.tag: ""
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "ghcr.io/noflowwater/edge-metrics-server:"
+
+  - it: should mount data volume
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /data
+
+  - it: should set security context
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+
+  - it: should have liveness and readiness probes
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /health
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /health

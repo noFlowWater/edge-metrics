@@ -1,0 +1,22 @@
+Edge Metrics has been deployed to namespace {{ .Release.Namespace }}.
+
+{{- if .Values.server.enabled }}
+
+== Server ==
+  kubectl port-forward svc/{{ .Release.Name }}-server 8081:8081 -n {{ .Release.Namespace }}
+  curl http://localhost:8081/health
+  curl http://localhost:8081/devices
+{{- end }}
+
+{{- if .Values.frontend.enabled }}
+
+== Frontend ==
+  kubectl port-forward svc/{{ .Release.Name }}-frontend 3000:3000 -n {{ .Release.Namespace }}
+  http://localhost:3000
+{{- end }}
+
+{{- if .Values.exporter.enabled }}
+
+== Exporter ==
+  DaemonSets deployed to edge nodes.
+{{- end }}

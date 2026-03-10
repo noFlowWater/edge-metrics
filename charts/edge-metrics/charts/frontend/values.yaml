@@ -1,0 +1,53 @@
+# -- Number of replicas
+replicaCount: 1
+
+image:
+  # -- Frontend image repository
+  repository: ghcr.io/noflowwater/edge-metrics-front
+  # -- Pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides appVersion
+  tag: ""
+
+# -- Image pull secrets
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Pod annotations
+podAnnotations: {}
+
+# -- Pod security context
+podSecurityContext: {}
+
+# -- Container security context
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+service:
+  # -- Service type
+  type: NodePort
+  # -- Service port
+  port: 3000
+  # -- NodePort (set when type=NodePort)
+  nodePort: 30080
+
+# -- Environment variables
+env:
+  # -- API URL pointing to server service
+  API_URL: "http://edge-metrics-server:8081"
+
+# -- Resources
+resources: {}
+
+# -- Node selector
+nodeSelector: {}
+
+# -- Tolerations
+tolerations: []
+
+# -- Affinity
+affinity: {}

@@ -1,0 +1,53 @@
+# Build artifacts
+edge-metrics-server
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Database files (don't include in image)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Documentation (optional, can uncomment if needed)
+# README.md
+# API.md
+
+# Kubernetes manifests (not needed in image)
+manifests/
+
+# Scripts (not needed in image)
+scripts/
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go workspace
+go.work
+go.work.sum
+vendor/
+
+# Docker
+Dockerfile
+.dockerignore

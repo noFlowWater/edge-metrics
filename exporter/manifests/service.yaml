@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: edge-metrics-exporter-jetson
+  namespace: monitoring
+  labels:
+    app: edge-metrics-exporter-jetson
+spec:
+  clusterIP: None
+  selector:
+    app: edge-metrics-exporter-jetson
+  ports:
+    - name: metrics
+      port: 9102
+      targetPort: 9102
+    - name: management
+      port: 9101
+      targetPort: 9101

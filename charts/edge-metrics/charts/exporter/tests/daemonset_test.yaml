@@ -1,0 +1,84 @@
+suite: exporter daemonset profiles
+templates:
+  - daemonset.yaml
+tests:
+  - it: should generate 2 DaemonSets when both profiles enabled
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: should generate 1 DaemonSet when only jetson enabled
+    set:
+      profiles.generic.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-exporter-jetson
+
+  - it: should generate 0 DaemonSets when all profiles disabled
+    set:
+      profiles.jetson.enabled: false
+      profiles.generic.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # Go range iterates map keys alphabetically: generic=0, jetson=1
+  - it: generic profile should have correct nodeSelector
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.device-family
+          value: generic
+
+  - it: generic profile should have restricted securityContext
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+
+  - it: jetson profile should have correct nodeSelector
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.device-family
+          value: jetson
+
+  - it: jetson profile should have SYS_RAWIO capability
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: true
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.add
+          content: SYS_RAWIO
+
+  - it: jetson profile should mount tegrastats
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /usr/bin/tegrastats
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].readOnly
+          value: true
+
+  - it: should use hostNetwork
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.hostNetwork
+          value: true
+      - equal:
+          path: spec.template.spec.dnsPolicy
+          value: ClusterFirstWithHostNet

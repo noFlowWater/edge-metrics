@@ -1,0 +1,77 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edge-metrics-server
+  namespace: monitoring
+  labels:
+    app: edge-metrics-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: edge-metrics-server
+  template:
+    metadata:
+      labels:
+        app: edge-metrics-server
+    spec:
+      serviceAccountName: edge-metrics-server
+      # nodeSelector (USE_LOCAL_DB=true 시 필수!)
+      # ⚠️ HostPath 사용 시 특정 노드에 스케줄링 필요
+      # nodeSelector:
+      #   kubernetes.io/hostname: genesis1
+      containers:
+      - name: server
+        image: edge-metrics-server:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8081"
+        - name: DB_PATH
+          value: "/data/config.db"
+        - name: SERVER_URL
+          value: "http://localhost:8081"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      volumes:
+      - name: data
+        # 옵션 1: emptyDir (기본, Pod 재시작 시 데이터 삭제)
+        emptyDir: {}
+
+        # 옵션 2: PVC (USE_PVC=true, 데이터 영구 보존)
+        # PVC 사용 시: 아래 주석 해제하고 pvc.yaml 먼저 적용
+        # persistentVolumeClaim:
+        #   claimName: edge-metrics-data
+
+        # 옵션 3: HostPath (USE_LOCAL_DB=true, 개발 전용!)
+        # ⚠️ 주의: 로컬 파일시스템 직접 마운트 (보안 위험, 프로덕션 사용 금지)
+        # ⚠️ 단일 노드 클러스터 전용 (minikube, Docker Desktop, kind 등)
+        # ⚠️ 파일 권한: Pod의 appuser(1000)가 읽기/쓰기 가능해야 함
+        # hostPath:
+        #   path: /home/genesis1/ETRI/research/edge-metrics/edge-metrics-server
+        #   type: Directory

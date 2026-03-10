@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: edge-metrics-server
+  namespace: monitoring
+  labels:
+    app: edge-metrics-server
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: edge-metrics-manager
+  namespace: monitoring
+  labels:
+    app: edge-metrics-server
+rules:
+- apiGroups: [""]
+  resources: ["services", "endpoints"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: edge-metrics-manager
+  namespace: monitoring
+  labels:
+    app: edge-metrics-server
+subjects:
+- kind: ServiceAccount
+  name: edge-metrics-server
+  namespace: monitoring
+roleRef:
+  kind: Role
+  name: edge-metrics-manager
+  apiGroup: rbac.authorization.k8s.io

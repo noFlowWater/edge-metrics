@@ -1,0 +1,41 @@
+suite: server RBAC
+templates:
+  - role.yaml
+tests:
+  - it: should create Role when serviceAccount.create is true
+    set:
+      serviceAccount.create: true
+    asserts:
+      - isKind:
+          of: Role
+      - equal:
+          path: rules[0].apiGroups[0]
+          value: ""
+      - contains:
+          path: rules[0].resources
+          content: services
+      - contains:
+          path: rules[0].resources
+          content: endpoints
+      - contains:
+          path: rules[0].verbs
+          content: get
+      - contains:
+          path: rules[0].verbs
+          content: list
+      - contains:
+          path: rules[0].verbs
+          content: create
+      - contains:
+          path: rules[0].verbs
+          content: update
+      - contains:
+          path: rules[0].verbs
+          content: delete
+
+  - it: should not create Role when serviceAccount.create is false
+    set:
+      serviceAccount.create: false
+    asserts:
+      - hasDocuments:
+          count: 0

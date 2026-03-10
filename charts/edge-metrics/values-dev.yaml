@@ -1,0 +1,19 @@
+# Development overrides — emptyDir, latest tag, observability off
+server:
+  enabled: true
+  image:
+    tag: latest
+  persistence:
+    enabled: false
+  serviceMonitor:
+    enabled: false
+
+exporter:
+  enabled: true
+  image:
+    tag: latest
+
+frontend:
+  enabled: true
+  image:
+    tag: latest

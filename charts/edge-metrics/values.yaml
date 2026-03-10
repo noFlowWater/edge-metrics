@@ -1,0 +1,18 @@
+# -- Global configuration shared across all subcharts
+global:
+  # -- Kubernetes namespace (also set via helm install -n)
+  namespace: monitoring
+  # -- Container image registry prefix
+  imageRegistry: ghcr.io/noflowwater
+
+# -- Server component (Go API + SQLite + K8s sync)
+server:
+  enabled: true
+
+# -- Exporter component (Python DaemonSet collecting device metrics)
+exporter:
+  enabled: true
+
+# -- Frontend component (React dashboard)
+frontend:
+  enabled: true
