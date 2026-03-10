@@ -1,0 +1,77 @@
+{{- range $name, $profile := .Values.profiles }}
+{{- if $profile.enabled }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "exporter.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "exporter.labels" $ | nindent 4 }}
+    edge-metrics/profile: {{ $name }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "exporter.selectorLabels" $ | nindent 6 }}
+      edge-metrics/profile: {{ $name }}
+  template:
+    metadata:
+      {{- with $.Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "exporter.labels" $ | nindent 8 }}
+        edge-metrics/profile: {{ $name }}
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      hostNetwork: {{ $.Values.hostNetwork }}
+      dnsPolicy: {{ $.Values.dnsPolicy }}
+      containers:
+        - name: exporter
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          ports:
+            - name: metrics
+              containerPort: {{ $.Values.metricsPort }}
+              protocol: TCP
+            - name: reload
+              containerPort: {{ $.Values.reloadPort }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := $.Values.commonEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $value := $profile.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- with $profile.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $.Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $profile.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with $profile.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $profile.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}

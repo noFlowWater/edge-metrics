@@ -1,0 +1,11 @@
+__pycache__
+*.pyc
+.git
+README.md
+API.md
+install.sh
+uninstall.sh
+config.yaml
+config.yaml.template
+manifests/
+scripts/

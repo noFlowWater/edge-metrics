@@ -1,0 +1,24 @@
+# Production overrides — PVC, pinned tags, full observability
+server:
+  enabled: true
+  image:
+    tag: "0.1.0"
+  persistence:
+    enabled: true
+    size: 1Gi
+  serviceMonitor:
+    enabled: true
+  prometheusRule:
+    enabled: true
+
+exporter:
+  enabled: true
+  image:
+    tag: "0.1.0"
+  serviceMonitor:
+    enabled: true
+
+frontend:
+  enabled: true
+  image:
+    tag: "0.1.0"

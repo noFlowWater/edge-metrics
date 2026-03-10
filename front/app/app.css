@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Pastel Color Palette */
+  --color-pastel-bg: #f8f9fc;
+  --color-pastel-card: #ffffff;
+  --color-pastel-border: #e8ebf3;
+
+  --color-pastel-primary: #7c3aed;
+  --color-pastel-primary-light: #a78bfa;
+  --color-pastel-primary-lighter: #e9d5ff;
+
+  --color-pastel-accent: #ec4899;
+  --color-pastel-accent-light: #f472b6;
+
+  --color-pastel-success: #10b981;
+  --color-pastel-success-light: #6ee7b7;
+  --color-pastel-success-bg: #d1fae5;
+
+  --color-pastel-danger: #ef4444;
+  --color-pastel-danger-light: #f87171;
+  --color-pastel-danger-bg: #fee2e2;
+
+  --color-pastel-warning: #f59e0b;
+  --color-pastel-warning-light: #fbbf24;
+  --color-pastel-warning-bg: #fef3c7;
+
+  --color-pastel-text: #334155;
+  --color-pastel-text-light: #64748b;
+  --color-pastel-text-muted: #94a3b8;
+}
+
+html,
+body {
+  background-color: var(--color-pastel-bg);
+  color: var(--color-pastel-text);
+  color-scheme: light;
+}

@@ -1,0 +1,109 @@
+# -- Number of replicas (keep 1 for SQLite)
+replicaCount: 1
+
+image:
+  # -- Server image repository
+  repository: ghcr.io/noflowwater/edge-metrics-server
+  # -- Pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides appVersion
+  tag: ""
+
+# -- Image pull secrets
+imagePullSecrets: []
+
+# -- Override release name
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Create ServiceAccount
+  create: true
+  # -- Annotations on the ServiceAccount
+  annotations: {}
+  # -- Override name
+  name: ""
+
+# -- Pod annotations
+podAnnotations: {}
+
+# -- Pod security context
+podSecurityContext: {}
+
+# -- Container security context
+securityContext:
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 8081
+
+# -- Server env vars
+env:
+  # -- Database path inside container
+  DB_PATH: /data/config.db
+  # -- Server listen port
+  PORT: "8081"
+  # -- Auto-sync interval in seconds
+  SYNC_INTERVAL: "60"
+  # -- Namespace for K8s resource sync
+  SYNC_NAMESPACE: monitoring
+
+persistence:
+  # -- Enable PVC for SQLite database
+  enabled: true
+  # -- Storage class (empty = default)
+  storageClass: ""
+  # -- Access mode
+  accessModes:
+    - ReadWriteOnce
+  # -- PVC size
+  size: 256Mi
+
+# -- Liveness probe config
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 15
+
+# -- Readiness probe config
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 3
+  periodSeconds: 10
+
+# -- Resource requests and limits
+resources: {}
+
+# -- Node selector
+nodeSelector: {}
+
+# -- Tolerations
+tolerations: []
+
+# -- Affinity
+affinity: {}
+
+serviceMonitor:
+  # -- Create ServiceMonitor for Prometheus Operator
+  enabled: false
+  # -- Scrape interval
+  interval: 15s
+  # -- Scrape timeout
+  scrapeTimeout: 10s
+
+prometheusRule:
+  # -- Create PrometheusRule for alerting
+  enabled: false
+
+grafanaDashboard:
+  # -- Create ConfigMap with Grafana dashboards (requires sidecar)
+  enabled: false

@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: edge-metrics-exporter-jetson
+  namespace: monitoring
+  labels:
+    app: edge-metrics-exporter-jetson
+spec:
+  selector:
+    matchLabels:
+      app: edge-metrics-exporter-jetson
+  endpoints:
+    - port: metrics
+      interval: 5s

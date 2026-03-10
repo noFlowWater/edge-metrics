@@ -1,0 +1,92 @@
+image:
+  # -- Exporter image repository
+  repository: ghcr.io/noflowwater/edge-metrics-exporter
+  # -- Pull policy
+  pullPolicy: IfNotPresent
+  # -- Overrides appVersion
+  tag: ""
+
+# -- Image pull secrets
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- DaemonSet profiles (one DaemonSet per enabled profile)
+profiles:
+  jetson:
+    # -- Enable Jetson profile
+    enabled: true
+    # -- Node selector for Jetson nodes
+    nodeSelector:
+      device-family: jetson
+    # -- Env vars for Jetson profile
+    env:
+      STUB_MODE: "false"
+    # -- Extra capabilities for tegrastats access
+    securityContext:
+      runAsUser: 0
+      readOnlyRootFilesystem: true
+      runAsNonRoot: false
+      allowPrivilegeEscalation: true
+      capabilities:
+        add: ["SYS_RAWIO"]
+    # -- Extra volume mounts (tegrastats binary)
+    extraVolumeMounts:
+      - name: tegrastats
+        mountPath: /usr/bin/tegrastats
+        readOnly: true
+    # -- Extra volumes
+    extraVolumes:
+      - name: tegrastats
+        hostPath:
+          path: /usr/bin/tegrastats
+          type: File
+  generic:
+    # -- Enable generic profile (Raspberry Pi, OrangePi, etc.)
+    enabled: true
+    # -- Node selector for generic edge devices
+    nodeSelector:
+      device-family: generic
+    # -- Env vars for generic profile
+    env:
+      STUB_MODE: "false"
+    # -- Security context (PSS restricted compliant)
+    securityContext:
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+    extraVolumeMounts: []
+    extraVolumes: []
+
+# -- Common env vars applied to all profiles
+commonEnv:
+  CONFIG_SERVER_URL: "http://edge-metrics-server:8081"
+  METRICS_PORT: "9102"
+  RELOAD_PORT: "9101"
+
+# -- Host networking for direct device access
+hostNetwork: true
+dnsPolicy: ClusterFirstWithHostNet
+
+# -- Pod annotations
+podAnnotations: {}
+
+# -- Resources
+resources: {}
+
+# -- Tolerations
+tolerations: []
+
+# -- Metrics port
+metricsPort: 9102
+# -- Reload port
+reloadPort: 9101
+
+serviceMonitor:
+  # -- Create ServiceMonitor
+  enabled: false
+  # -- Scrape interval
+  interval: 30s
+  # -- Scrape timeout
+  scrapeTimeout: 15s

@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: edge-metrics-exporter-generic
+  namespace: monitoring
+  labels:
+    app: edge-metrics-exporter-generic
+spec:
+  selector:
+    matchLabels:
+      app: edge-metrics-exporter-generic
+  endpoints:
+    - port: metrics
+      interval: 5s

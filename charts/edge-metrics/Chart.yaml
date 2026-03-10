@@ -1,0 +1,27 @@
+apiVersion: v2
+name: edge-metrics
+description: Edge device metrics collection and monitoring platform for Kubernetes
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - edge
+  - metrics
+  - monitoring
+  - iot
+  - prometheus
+home: https://github.com/noFlowWater/edge-metrics
+sources:
+  - https://github.com/noFlowWater/edge-metrics
+maintainers:
+  - name: noFlowWater
+dependencies:
+  - name: server
+    version: 0.1.0
+    condition: server.enabled
+  - name: exporter
+    version: 0.1.0
+    condition: exporter.enabled
+  - name: frontend
+    version: 0.1.0
+    condition: frontend.enabled

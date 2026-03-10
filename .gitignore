@@ -1,0 +1,41 @@
+# AI agents / sensitive
+.internal/
+.claude/
+.mcp.json
+CLAUDE.md
+AGENTS.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+edge-metrics-server/edge-metrics-server
+*.exe
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Node
+edge-metrics-front/node_modules/
+edge-metrics-front/.react-router/
+edge-metrics-front/build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+*.tar
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+.gitnexus

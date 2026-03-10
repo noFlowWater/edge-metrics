@@ -1,0 +1,47 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'e2e-test')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - name: Install k3d
+        run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+      - name: Create k3d cluster
+        run: bash e2e/setup.sh
+
+      - name: Build images
+        run: |
+          docker build -t ghcr.io/noflowwater/edge-metrics-server:e2e server/
+          docker build -t ghcr.io/noflowwater/edge-metrics-exporter:e2e exporter/
+          docker build -t ghcr.io/noflowwater/edge-metrics-front:e2e front/
+
+      - name: Import images to k3d
+        run: |
+          k3d image import ghcr.io/noflowwater/edge-metrics-server:e2e -c edge-metrics-e2e
+          k3d image import ghcr.io/noflowwater/edge-metrics-exporter:e2e -c edge-metrics-e2e
+          k3d image import ghcr.io/noflowwater/edge-metrics-front:e2e -c edge-metrics-e2e
+
+      - name: Helm install
+        run: bash e2e/test_install.sh
+
+      - name: Run e2e tests
+        run: bash e2e/test_device_lifecycle.sh
+
+      - name: Teardown
+        if: always()
+        run: bash e2e/teardown.sh

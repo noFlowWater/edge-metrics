@@ -1,0 +1,12 @@
+dependencies:
+- name: server
+  repository: ""
+  version: 0.1.0
+- name: exporter
+  repository: ""
+  version: 0.1.0
+- name: frontend
+  repository: ""
+  version: 0.1.0
+digest: sha256:75be3c6e33e4e1a44b884ee6fe609bb4e1255c3a194ecd5eb26a77bb6a1fdbd0
+generated: "2026-03-10T04:53:45.928686895+09:00"

@@ -1,0 +1,22 @@
+# kube-prometheus-stack Helm values
+# - node-exporter에서 jetson 메트릭 제외
+# - Grafana ECharts 플러그인 설치
+#
+# 적용 방법:
+#   helm upgrade monitoring prometheus-community/kube-prometheus-stack \
+#     -n monitoring \
+#     -f prometheus-values.yaml
+
+grafana:
+  plugins:
+    - volkovlabs-echarts-panel
+
+prometheus-node-exporter:
+  prometheus:
+    monitor:
+      # node-exporter에서 수집한 jetson 메트릭 드롭
+      # (edge-metrics-server의 ServiceMonitor에서 직접 수집하므로 중복 방지)
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          regex: 'jetson_.*'
+          action: drop

@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  go-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Run tests
+        run: go test ./... -coverprofile=cover.out
+
+      - name: Coverage summary
+        run: go tool cover -func=cover.out
+
+  python-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: exporter
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: exporter/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pyyaml
+
+      - name: Run tests
+        run: python -m pytest tests/ -v
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - name: Install helm-unittest
+        run: helm plugin install --verify=false https://github.com/helm-unittest/helm-unittest.git
+
+      - name: Helm lint
+        run: helm lint charts/edge-metrics
+
+      - name: Helm template
+        run: helm template test charts/edge-metrics > /dev/null
+
+      - name: Helm unittest - server
+        run: helm unittest charts/edge-metrics/charts/server
+
+      - name: Helm unittest - exporter
+        run: helm unittest charts/edge-metrics/charts/exporter
+
+      - name: Install kubeconform
+        run: |
+          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz -C /usr/local/bin/
+
+      - name: Kubeconform - default
+        run: helm template test charts/edge-metrics | kubeconform -strict -ignore-missing-schemas -summary
+
+      - name: Kubeconform - dev values
+        run: helm template test charts/edge-metrics -f charts/edge-metrics/values-dev.yaml | kubeconform -strict -ignore-missing-schemas -summary
+
+      - name: Kubeconform - prod values
+        run: helm template test charts/edge-metrics -f charts/edge-metrics/values-prod.yaml | kubeconform -strict -ignore-missing-schemas -summary
