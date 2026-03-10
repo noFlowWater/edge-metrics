@@ -1,15 +1,23 @@
-FROM python:3.12-slim
-LABEL org.opencontainers.image.source="https://github.com/noFlowWater/edge-metrics"
-
-RUN apt-get update && apt-get install -y --no-install-recommends tini \
-    && rm -rf /var/lib/apt/lists/*
-
+FROM python:3.12-alpine AS builder
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser && chown -R appuser:appuser /app
+FROM python:3.12-alpine
+LABEL org.opencontainers.image.source="https://github.com/noFlowWater/edge-metrics"
+
+RUN apk add --no-cache tini && \
+    rm -rf /usr/local/lib/python3.12/ensurepip \
+           /usr/local/lib/python3.12/idlelib \
+           /usr/local/bin/pip* \
+           /usr/local/lib/python3.12/site-packages/pip*
+
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
+
+RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser -h /app appuser && chown -R appuser:appuser /app
 
 COPY exporter.py config_loader.py shelly_server.py entrypoint.sh ./
 COPY collectors/ ./collectors/
