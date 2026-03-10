@@ -56,7 +56,10 @@ jobs:
 
       - uses: azure/setup-helm@v4
 
-      - uses: helmunittest/helm-unittest-action@v2
+      # helm-unittest does not sign releases yet, so --verify=false is required on Helm v4
+      # Tracking: https://github.com/helm-unittest/helm-unittest/issues/777
+      - name: Install helm-unittest
+        run: helm plugin install --verify=false https://github.com/helm-unittest/helm-unittest.git
 
       - name: Helm lint
         run: helm lint charts/edge-metrics

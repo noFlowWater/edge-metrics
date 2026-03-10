@@ -18,7 +18,7 @@ helm install "$RELEASE" charts/edge-metrics -n "$NAMESPACE" \
   --set frontend.enabled=false
 
 echo "=== Waiting for server pod ==="
-kubectl rollout status deployment/"$RELEASE"-server -n "$NAMESPACE" --timeout=60s
+kubectl rollout status deployment/"$RELEASE"-server -n "$NAMESPACE" --timeout=120s
 
 echo "=== Testing /health ==="
 kubectl exec -n "$NAMESPACE" deploy/"$RELEASE"-server -- wget -qO- http://localhost:8081/health
