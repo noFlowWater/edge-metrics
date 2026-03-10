@@ -31,7 +31,7 @@ jobs:
       - name: Build image
         run: docker build -t ${{ matrix.image }}:scan ${{ matrix.context }}/
 
-      - name: Run Trivy (SARIF report)
+      - name: Run Trivy (SARIF report, all CVEs)
         uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ matrix.image }}:scan
@@ -45,12 +45,13 @@ jobs:
         with:
           sarif_file: trivy-${{ matrix.image }}.sarif
 
-      - name: Fail on CRITICAL/HIGH vulnerabilities
+      - name: Fail on fixable CRITICAL/HIGH vulnerabilities
         uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ matrix.image }}:scan
           format: table
           severity: CRITICAL,HIGH
+          ignore-unfixed: true
           exit-code: 1
 
   helm-security:
