@@ -7,7 +7,8 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 FROM python:3.12-alpine
 LABEL org.opencontainers.image.source="https://github.com/noFlowWater/edge-metrics"
 
-RUN apk add --no-cache tini && \
+RUN apk upgrade --no-cache && \
+    apk add --no-cache tini && \
     rm -rf /usr/local/lib/python3.12/ensurepip \
            /usr/local/lib/python3.12/idlelib \
            /usr/local/bin/pip* \
