@@ -9,6 +9,7 @@ on:
       - "front/**"
 
 permissions:
+  contents: read
   packages: write
 
 env:
