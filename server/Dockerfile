@@ -18,7 +18,7 @@ RUN go mod download
 COPY . .
 
 # Build binary with CGO enabled (required for SQLite)
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags="-s -w" -o edge-metrics-server .
+RUN CGO_ENABLED=1 GOOS=linux go build -installsuffix cgo -ldflags="-s -w" -o edge-metrics-server .
 
 # Stage 2: Runtime stage
 FROM alpine:3.21
