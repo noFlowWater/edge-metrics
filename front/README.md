@@ -75,10 +75,10 @@ NAMESPACE=monitoring REGISTRY=myregistry.com ./scripts/deploy.sh v1.0.0
 
 ```bash
 # Check pods
-kubectl get pods -n monitoring -l app=edge-metrics-front
+kubectl get pods -n monitoring -l app.kubernetes.io/name=frontend
 
 # View logs
-kubectl logs -n monitoring -l app=edge-metrics-front --tail=50 -f
+kubectl logs -n monitoring -l app.kubernetes.io/name=frontend --tail=50 -f
 
 # Check service
 kubectl get svc -n monitoring edge-metrics-front

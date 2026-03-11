@@ -1,6 +1,6 @@
 # Edge Metrics Exporter
 
-Prometheus exporter for edge device power consumption monitoring. Deployed as K8s DaemonSet across KubeEdge edge nodes.
+Prometheus exporter for edge device power consumption monitoring. Deployed as K8s DaemonSet across edge nodes.
 
 ## Features
 
@@ -27,99 +27,97 @@ Prometheus exporter for edge device power consumption monitoring. Deployed as K8
 
 ```
 [Edge Node - DaemonSet Pod]
- ├─ Config Loader (central API + local fallback + bidirectional sync)
- ├─ Shelly Server (WebSocket + HTTP, background process)
- ├─ Collector (device-specific power reading with auto-discovery)
- └─ Exporter
-     ├─ :9102/metrics (Prometheus)
-     └─ :9101 Management API
-         ├─ GET  /health (Health check)
-         ├─ POST /reload (Config reload trigger)
-         ├─ GET  /metrics/list (List all metrics and status)
-         └─ POST /metrics/enable (Enable/disable metrics)
+ +-- Config Loader (central API + local fallback + bidirectional sync)
+ +-- Shelly Server (WebSocket + HTTP, background process)
+ +-- Collector (device-specific power reading with auto-discovery)
+ +-- Exporter
+     +-- :9102/metrics (Prometheus)
+     +-- :9101 Management API
+         +-- GET  /health (Health check)
+         +-- POST /reload (Config reload trigger)
+         +-- GET  /metrics/list (List all metrics and status)
+         +-- POST /metrics/enable (Enable/disable metrics)
 
 [Central Server]
- ├─ Config Server (GET /config/{device_id}, PUT /config/{device_id})
- └─ Prometheus (ServiceMonitor, 5s interval)
+ +-- Config Server (GET /config/{device_id}, PUT /config/{device_id})
+ +-- Prometheus (ServiceMonitor, 5s interval)
 ```
 
 ## Deployment (K8s DaemonSet)
 
 ### Prerequisites
 
-- K8s cluster with KubeEdge
-- 노드 라벨: `device-family=jetson` 또는 `device-family=generic`
-- Docker Hub 이미지: `daclab/edge-metrics-exporter:v1.0.0`
-- EdgeMesh: `edge-metrics-server` 서비스에 EdgeMesh 라벨 필요
+- Kubernetes cluster (1.26+)
+- Node labels: `device-family=jetson` or `device-family=generic`
+- Container images available (via Helm install or manual push)
 
-### Quick Deploy
+### Helm (Recommended)
+
+See the [Helm chart README](../charts/edge-metrics/README.md) for full installation instructions.
 
 ```bash
-# 전체 배포 (Jetson + Generic)
-REGISTRY=daclab ./scripts/deploy.sh v1.0.0 --all
+# Install full stack
+helm install edge-metrics charts/edge-metrics \
+  --namespace monitoring --create-namespace
 
-# Jetson만
-REGISTRY=daclab ./scripts/deploy.sh v1.0.0 --jetson
-
-# Generic만
-REGISTRY=daclab ./scripts/deploy.sh v1.0.0 --generic
+# Verify exporter pods
+kubectl get pods -n monitoring -l app.kubernetes.io/name=exporter
 ```
 
-### DaemonSet 프로파일
+### DaemonSet Profiles
 
-| 프로파일 | 대상 | 특성 |
-|---------|------|------|
-| **Jetson** (`daemonset.yaml`) | jetsono, jetsonx, jetson-nano | `privileged: true`, tegrastats hostPath 마운트 |
-| **Generic** (`daemonset-generic.yaml`) | rasp5, orangepi, lattepanda | Non-privileged, security hardened |
+| Profile | Target Nodes | Characteristics |
+|---------|-------------|-----------------|
+| **Jetson** | jetsono, jetsonx, jetson-nano | `privileged: true`, tegrastats hostPath mount |
+| **Generic** | rasp5, orangepi, lattepanda | Non-privileged, security hardened |
 
-공통: `hostNetwork: true`, `dnsPolicy: ClusterFirstWithHostNet`, tini PID 1
+Common: `hostNetwork: true`, `dnsPolicy: ClusterFirstWithHostNet`, tini PID 1
 
-### 이미지 빌드
+### Legacy: Script-Based Deployment (Deprecated)
+
+> Deprecated in favor of Helm. Scripts will be removed after 2026-06-01.
+
+<details>
+<summary>Click to expand legacy deployment instructions</summary>
 
 ```bash
-# 멀티아키텍처 빌드 + Docker Hub push
+# Full deployment (Jetson + Generic)
+REGISTRY=daclab ./scripts/deploy.sh v1.0.0 --all
+
+# Jetson only
+REGISTRY=daclab ./scripts/deploy.sh v1.0.0 --jetson
+
+# Generic only
+REGISTRY=daclab ./scripts/deploy.sh v1.0.0 --generic
+
+# Undeploy
+./scripts/undeploy.sh --all
+
+# Build multi-arch image
 REGISTRY=daclab ./scripts/build.sh v1.0.0
 ```
 
-빌드 플랫폼: `linux/arm64`, `linux/amd64`
+Build platforms: `linux/arm64`, `linux/amd64`
 
-### 삭제
-
-```bash
-# 전체 삭제
-./scripts/undeploy.sh --all
-
-# Jetson만 삭제
-./scripts/undeploy.sh --jetson
-```
-
-### 통합 배포 (Server + Exporter + Frontend)
-
-```bash
-# 전체 스택 배포
-REGISTRY=daclab ./deploy/deploy-all.sh v1.0.0
-
-# 전체 스택 삭제
-./deploy/undeploy-all.sh
-```
+</details>
 
 ## Configuration
 
 ### Environment Variables
 
-DaemonSet Pod env로 설정:
+Set via DaemonSet Pod env:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CONFIG_SERVER_URL` | `http://edge-metrics-server.monitoring.svc.cluster.local:8081` | Config 서버 URL (FQDN 필수) |
-| `CONFIG_TIMEOUT` | `5` | Config 서버 요청 타임아웃 (초) |
-| `LOCAL_CONFIG_PATH` | `/config/config.yaml` | 로컬 fallback config 경로 |
-| `SHELLY_ENABLED` | `true` | Shelly WebSocket 서버 활성화 |
-| `NODE_NAME` | (Downward API) | K8s 노드 이름 |
+| `CONFIG_SERVER_URL` | `http://edge-metrics-server.monitoring.svc.cluster.local:8081` | Config server URL (FQDN required) |
+| `CONFIG_TIMEOUT` | `5` | Config server request timeout (seconds) |
+| `LOCAL_CONFIG_PATH` | `/config/config.yaml` | Local fallback config path |
+| `SHELLY_ENABLED` | `true` | Enable Shelly WebSocket server |
+| `NODE_NAME` | (Downward API) | K8s node name |
 
 ### Config File (`config.yaml`)
 
-`/var/lib/edge-metrics/config.yaml` (hostPath로 마운트):
+`/var/lib/edge-metrics/config.yaml` (mounted via hostPath):
 
 ```yaml
 device_type: "jetson_orin"  # Device type
@@ -135,13 +133,13 @@ metrics:
   jetson_ram_used_percent: true
 ```
 
-Config 우선순위: Config Server fetch → 로컬 fallback → 에러
+Config priority: Config Server fetch -> local fallback -> error
 
 ## Usage
 
 ### Prometheus Configuration
 
-ServiceMonitor가 자동으로 Prometheus 타겟을 등록합니다. 수동 설정이 필요한 경우:
+ServiceMonitor automatically registers Prometheus targets. For manual configuration:
 
 ```yaml
 scrape_configs:
@@ -156,13 +154,13 @@ scrape_configs:
 ### Example Queries
 
 ```promql
-# Total power consumption by device
+# Total power consumption by device (Shelly external measurement)
 power_total_watts{device_type="jetson_orin"}
 
-# Shelly plug power
-shelly_power_total_watts
+# Internal power rails
+jetson_power_vdd_gpu_soc_watts{device_type="jetson_orin"}
 
-# Sum of all devices
+# Sum of all devices (Shelly)
 sum(power_total_watts)
 
 # Average power over 5 minutes
@@ -251,12 +249,9 @@ Example available metrics (dynamically discovered from tegrastats):
 
 | Metric | Description | Unit |
 |--------|-------------|------|
-| `shelly_power_total_watts` | Total power consumption | Watts |
-| `shelly_power_voltage_volts` | Voltage | Volts |
-| `shelly_power_current_amps` | Current | Amps |
-| `shelly_power_frequency_hz` | Frequency | Hz |
-| `shelly_energy_total_wh` | Total energy consumed | Wh |
-| `shelly_temperature_celsius` | Device temperature | Celsius |
+| `power_total_watts` | Total power consumption | Watts |
+| `power_voltage_volts` | Voltage | Volts |
+| `power_current_amps` | Current | Amps |
 
 All metrics include labels:
 - `device_type`: Device type (e.g., `jetson_orin`, `raspberry_pi`)
@@ -296,63 +291,62 @@ device_type: "new_device"
 
 ## Troubleshooting
 
-### Pod가 CrashLoopBackOff
+### Pod in CrashLoopBackOff
 
 ```bash
-# Pod 로그 확인
-kubectl logs -n monitoring -l app=edge-metrics-exporter-jetson --tail=50
+# Check Pod logs
+kubectl logs -n monitoring -l app.kubernetes.io/name=exporter --tail=50
 
-# Health 확인
+# Health check
 curl http://<node-ip>:9101/health
 ```
 
-### Config 서버 연결 실패
+### Config Server Connection Failure
 
-EdgeMesh 라벨 확인:
+Verify server service is running:
 ```bash
-kubectl get svc -n monitoring edge-metrics-server --show-labels
-# 필수 라벨: kubeedge.io/edgemesh-service=true
+kubectl get svc -n monitoring edge-metrics-server
 ```
 
-로컬 fallback config 확인:
+Check local fallback config:
 ```bash
 kubectl exec -n monitoring <pod-name> -- cat /config/config.yaml
 ```
 
-### tegrastats permission denied (Jetson)
+### tegrastats Permission Denied (Jetson)
 
-Jetson DaemonSet은 `privileged: true`로 실행되므로 권한 문제가 없어야 합니다.
-tegrastats 바이너리 마운트 확인:
+Jetson DaemonSet runs with `privileged: true`, so there should be no permission issues.
+Check tegrastats binary mount:
 ```bash
 kubectl exec -n monitoring <pod-name> -- ls -la /usr/bin/tegrastats
 ```
 
-### Shelly device 연결 안 됨
+### Shelly Device Not Connecting
 
-Shelly plug 펌웨어의 WebSocket 대상 IP가 해당 노드 IP와 일치하는지 확인.
-`hostNetwork: true`이므로 Pod IP = 노드 IP.
+Check that the Shelly plug firmware's WebSocket target IP matches the node IP.
+Since `hostNetwork: true`, Pod IP = node IP.
 
 ```bash
-# Shelly 서버 상태 확인
+# Check Shelly server status
 curl http://<node-ip>:8766/devices
 ```
 
 ## Development
 
-### 로컬 실행 (개발용)
+### Local Execution (Development)
 
 ```bash
 pip3 install -r requirements.txt
 python3 exporter.py
 ```
 
-### 디버깅
+### Debugging
 
 ```bash
-# Pod 로그 실시간
-kubectl logs -n monitoring -l 'app in (edge-metrics-exporter-jetson,edge-metrics-exporter-generic)' --tail=50 -f
+# Real-time Pod logs
+kubectl logs -n monitoring -l app.kubernetes.io/name=exporter --tail=50 -f
 
-# 특정 노드 Pod
+# Specific node Pod
 kubectl logs -n monitoring <pod-name> -f
 ```
 
@@ -367,7 +361,7 @@ kubectl logs -n monitoring <pod-name> -f
 - [x] Selective metrics collection (metrics dict format)
 - [x] Auto-discovery of new metrics
 - [x] Management API (GET /metrics/list, POST /metrics/enable)
-- [x] Bidirectional server sync (client → server)
+- [x] Bidirectional server sync (client -> server)
 - [x] Shelly plug WebSocket collector
 - [x] K8s DaemonSet deployment (Jetson + Generic)
 - [x] Multi-arch container image (arm64 + amd64)

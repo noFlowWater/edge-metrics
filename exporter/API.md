@@ -578,10 +578,10 @@ The Shelly integration provides **external AC power consumption** metrics for ed
 
 **Running:**
 ```bash
-# Standalone (개발용)
+# Standalone (development)
 python3 shelly_server.py
 
-# DaemonSet에서는 entrypoint.sh가 자동 기동 (SHELLY_ENABLED=true)
+# In DaemonSet, entrypoint.sh starts it automatically (SHELLY_ENABLED=true)
 ```
 
 #### 2. ShellyCollector
@@ -737,17 +737,17 @@ List all connected devices.
 
 ### Deployment
 
-DaemonSet으로 배포 시 `entrypoint.sh`가 shelly_server와 exporter를 자동 기동합니다.
+When deployed as a DaemonSet, `entrypoint.sh` automatically starts both shelly_server and exporter.
 
 ```bash
-# DaemonSet 배포
+# DaemonSet deployment
 REGISTRY=daclab ./scripts/deploy.sh v1.0.0 --all
 
-# Pod 로그 확인
-kubectl logs -n monitoring -l 'app in (edge-metrics-exporter-jetson,edge-metrics-exporter-generic)' --tail=50 -f
+# Check Pod logs
+kubectl logs -n monitoring -l app.kubernetes.io/name=exporter --tail=50 -f
 ```
 
-개발용 로컬 실행:
+Local development:
 ```bash
 pip3 install -r requirements.txt
 

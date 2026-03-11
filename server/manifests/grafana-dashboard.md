@@ -1,84 +1,84 @@
 # Edge Devices Power & Energy Monitoring Dashboard
 
-Jetson 엣지 디바이스(Xavier, Nano, Orin)의 전력 메트릭을 실시간으로 시각화하고, 워크로드별 에너지 사용량을 분석하기 위한 Grafana 대시보드입니다.
+Grafana dashboard for real-time power metric visualization and workload energy analysis across Jetson edge devices (Xavier, Nano, Orin).
 
-## 디바이스별 전력 메트릭 구조
+## Per-Device Power Metric Structure
 
-| 디바이스 | 총 전력 메트릭 | 설명 |
-|---------|--------------|------|
-| **Xavier** | `jetson_power_vdd_in_watts` | 메인 전원 입력 (단일 센서) |
-| **Nano** | `jetson_power_pom_5v_in_watts` | 5V 입력 전원 (단일 센서) |
-| **Orin** | 합산 필요 | 개별 레일만 존재 |
+| Device | Total Power Metric | Description |
+|--------|-------------------|-------------|
+| **Xavier** | `jetson_power_vdd_in_watts` | Main power input (single sensor) |
+| **Nano** | `jetson_power_pom_5v_in_watts` | 5V input power (single sensor) |
+| **Orin** | Sum required | Individual rails only |
 
-### Orin 전력 계산
+### Orin Power Calculation
 
-Orin은 총 전력을 측정하는 단일 센서가 없어 3개 채널을 합산해야 합니다:
+Orin lacks a single total power sensor, so 3 channels must be summed:
 
 ```promql
-jetson_power_vdd_gpu_soc_watts    # GPU + SoC 전력
-+ jetson_power_vdd_cpu_cv_watts   # CPU + Computer Vision 전력
-+ jetson_power_vin_sys_5v0_watts  # 시스템 5V 전력
+jetson_power_vdd_gpu_soc_watts    # GPU + SoC power
++ jetson_power_vdd_cpu_cv_watts   # CPU + Computer Vision power
++ jetson_power_vin_sys_5v0_watts  # System 5V power
 ```
 
 ---
 
-## 에너지 계산 수식
+## Energy Calculation
 
-### 기본 공식
+### Formula
 
 ```
-에너지 (Wh) = 평균 전력 (W) × 시간 (h)
+Energy (Wh) = Average Power (W) x Time (h)
 ```
 
-### PromQL 구현
+### PromQL Implementation
 
 ```promql
 avg_over_time(power_metric[$__range]) * $__range_s / 3600
 ```
 
-| 변수 | 설명 |
-|-----|------|
-| `$__range` | Grafana 선택 시간 범위 (예: 15m, 1h) |
-| `$__range_s` | 시간 범위를 초 단위로 변환 |
-| `/ 3600` | 초 → 시간 변환 (Wh 단위) |
+| Variable | Description |
+|----------|-------------|
+| `$__range` | Grafana selected time range (e.g., 15m, 1h) |
+| `$__range_s` | Time range in seconds |
+| `/ 3600` | Convert seconds to hours (for Wh) |
 
-### 계산 예시
+### Example
 
 ```
-시간 범위: 15분 = 900초 = 0.25시간
-평균 전력: 5W
-에너지: 5W × 0.25h = 1.25 Wh
+Time range: 15 min = 900 sec = 0.25 h
+Average power: 5W
+Energy: 5W x 0.25h = 1.25 Wh
 ```
 
-### 주의사항
+### Notes
 
-- `increase()` 함수는 **Counter** 메트릭 전용
-- 전력 메트릭은 **Gauge** 타입이므로 `avg_over_time()` 사용
+- `increase()` is for **Counter** metrics only
+- Power metrics are **Gauge** type, so use `avg_over_time()`
 
 ---
 
-## 통계 함수
+## Statistical Functions
 
-| 함수 | 용도 | 사용 예시 |
-|-----|------|----------|
-| `avg_over_time(metric[$__range])` | 시간 범위 내 평균값 | 평균 전력 계산 |
-| `max_over_time(metric[$__range])` | 시간 범위 내 최대값 | 피크 전력 감지 |
-| `min_over_time(metric[$__range])` | 시간 범위 내 최소값 | 유휴 전력 확인 |
+| Function | Purpose | Example |
+|----------|---------|---------|
+| `avg_over_time(metric[$__range])` | Average over time range | Average power |
+| `max_over_time(metric[$__range])` | Maximum over time range | Peak power |
+| `min_over_time(metric[$__range])` | Minimum over time range | Idle power |
 
 ---
 
-## 패널별 쿼리 상세
+## Panel Query Details
 
-### 1. 실시간 전력 메트릭 (Time Series)
+### 1. Real-Time Power Metrics (Time Series)
 
 ```promql
 jetson_power_vdd_in_watts{device_type=~"$device_type",hostname=~"$hostname"}
 ```
 
-- **interval**: `1s` (1초 해상도)
-- **용도**: 전력 변화 실시간 모니터링
+- **interval**: `1s` (1-second resolution)
+- **Purpose**: Real-time power monitoring
 
-### 2. 총 에너지 사용량 (Stat)
+### 2. Total Energy Usage (Stat)
 
 **Xavier:**
 ```promql
@@ -90,103 +90,103 @@ sum(avg_over_time(jetson_power_vdd_in_watts{device_type="jetson_xavier"}[$__rang
 sum(avg_over_time(jetson_power_pom_5v_in_watts{device_type="jetson_nano"}[$__range])) * $__range_s / 3600
 ```
 
-**Orin (3채널 합산):**
+**Orin (3-channel sum):**
 ```promql
 sum(avg_over_time(jetson_power_vdd_gpu_soc_watts{device_type="jetson_orin"}[$__range])) * $__range_s / 3600
 + sum(avg_over_time(jetson_power_vdd_cpu_cv_watts{device_type="jetson_orin"}[$__range])) * $__range_s / 3600
 + sum(avg_over_time(jetson_power_vin_sys_5v0_watts{device_type="jetson_orin"}[$__range])) * $__range_s / 3600
 ```
 
-### 3. 평균/최대/최소 전력 (Stat)
+### 3. Average / Max / Min Power (Stat)
 
-**평균 전력:**
+**Average:**
 ```promql
 avg_over_time(jetson_power_vdd_in_watts{device_type="jetson_xavier"}[$__range])
 ```
 
-**최대 전력:**
+**Max:**
 ```promql
 max_over_time(jetson_power_vdd_in_watts{device_type="jetson_xavier"}[$__range])
 ```
 
-**최소 전력:**
+**Min:**
 ```promql
 min_over_time(jetson_power_vdd_in_watts{device_type="jetson_xavier"}[$__range])
 ```
 
-### 4. 디바이스별 에너지 비율 (Pie Chart)
+### 4. Per-Device Energy Ratio (Pie Chart)
 
 ```promql
 sum by (hostname) (avg_over_time(jetson_power_vdd_in_watts{device_type="jetson_xavier"}[$__range])) * $__range_s / 3600
 ```
 
-### 5. 디바이스별 통계 테이블 (Table)
+### 5. Per-Device Statistics Table
 
-여러 디바이스 타입을 `or`로 연결하여 단일 테이블에 표시:
+Multiple device types joined with `or` in a single table:
 
 ```promql
-label_replace(avg_over_time(jetson_power_vdd_in_watts{...}[$__range]), "metric", "평균 전력 (W)", "", "")
-or label_replace(avg_over_time(jetson_power_pom_5v_in_watts{...}[$__range]), "metric", "평균 전력 (W)", "", "")
-or label_replace(avg_over_time(jetson_power_vin_sys_5v0_watts{...}[$__range]), "metric", "평균 전력 (W)", "", "")
+label_replace(avg_over_time(jetson_power_vdd_in_watts{...}[$__range]), "metric", "Avg Power (W)", "", "")
+or label_replace(avg_over_time(jetson_power_pom_5v_in_watts{...}[$__range]), "metric", "Avg Power (W)", "", "")
+or label_replace(avg_over_time(jetson_power_vin_sys_5v0_watts{...}[$__range]), "metric", "Avg Power (W)", "", "")
 ```
 
 ---
 
-## 쿼리 해상도 설정
+## Query Resolution Settings
 
-| 설정 | 값 | 설명 |
-|-----|---|------|
-| Query `interval` | `1s` | Grafana 쿼리 해상도 |
-| ServiceMonitor `scrapeInterval` | `1s` | Prometheus 수집 주기 |
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Query `interval` | `1s` | Grafana query resolution |
+| ServiceMonitor `scrapeInterval` | `1s` | Prometheus scrape interval |
 
-Grafana는 시간 범위에 따라 자동으로 step을 계산하므로, 정확한 1초 해상도가 필요하면 `interval: "1s"` 명시 필요.
-
----
-
-## 대시보드 변수
-
-| 변수 | 쿼리 | 설명 |
-|-----|------|------|
-| `$device_type` | `label_values({__name__=~"jetson_power_.*"}, device_type)` | 디바이스 타입 필터 |
-| `$hostname` | `label_values({__name__=~"jetson_power_.*", device_type=~"$device_type"}, hostname)` | 호스트명 필터 |
+Grafana auto-calculates step based on time range. Set `interval: "1s"` for exact 1-second resolution.
 
 ---
 
-## Import 방법
+## Dashboard Variables
 
-1. Grafana 로그인
-2. `Dashboards` → `Import` 클릭
-3. `Upload JSON file` 선택
-4. `grafana-dashboard.json` 업로드
-5. Prometheus 데이터소스 선택
-6. `Import` 클릭
+| Variable | Query | Description |
+|----------|-------|-------------|
+| `$device_type` | `label_values({__name__=~"jetson_power_.*"}, device_type)` | Device type filter |
+| `$hostname` | `label_values({__name__=~"jetson_power_.*", device_type=~"$device_type"}, hostname)` | Hostname filter |
 
 ---
 
-## 워크로드 에너지 분석
+## Import Instructions
 
-### 분석 절차
-
-1. **워크로드 시작 시간 기록**
-2. **워크로드 실행**
-3. **워크로드 종료 시간 기록**
-4. **Grafana Time Range 설정** (시작~종료 시간)
-5. **통계 확인**:
-   - 총 에너지 사용량 (Wh)
-   - 평균 전력 (W)
-   - 최대 전력 (W)
-
-### 에너지 효율 비교 예시
-
-| 워크로드 | 시간 | 평균 전력 | 총 에너지 | 효율 |
-|---------|-----|----------|----------|------|
-| Model A | 5분 | 3.8W | 0.32 Wh | 기준 |
-| Model B | 5분 | 3.2W | 0.27 Wh | 16% 절감 |
+1. Log in to Grafana
+2. Go to `Dashboards` -> `Import`
+3. Click `Upload JSON file`
+4. Upload `grafana-dashboard.json`
+5. Select Prometheus data source
+6. Click `Import`
 
 ---
 
-## 관련 파일
+## Workload Energy Analysis
 
-- `grafana-dashboard.json`: 대시보드 JSON 정의
-- `servicemonitor.yaml`: Prometheus ServiceMonitor 설정
-- `prometheus-values.yaml`: Helm values (node-exporter jetson 메트릭 제외)
+### Procedure
+
+1. Record workload start time
+2. Run workload
+3. Record workload end time
+4. Set Grafana Time Range (start to end)
+5. Check statistics:
+   - Total energy usage (Wh)
+   - Average power (W)
+   - Peak power (W)
+
+### Energy Efficiency Comparison Example
+
+| Workload | Duration | Avg Power | Total Energy | Efficiency |
+|----------|----------|-----------|--------------|------------|
+| Model A | 5 min | 3.8W | 0.32 Wh | Baseline |
+| Model B | 5 min | 3.2W | 0.27 Wh | 16% savings |
+
+---
+
+## Related Files
+
+- `grafana-dashboard.json`: Dashboard JSON definition
+- `servicemonitor.yaml`: Prometheus ServiceMonitor config
+- `prometheus-values.yaml`: Helm values (exclude node-exporter jetson metrics)

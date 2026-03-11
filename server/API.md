@@ -2,10 +2,27 @@
 
 ## Overview
 
-Edge Metrics Server는 edge-metrics-exporter 클라이언트를 위한 중앙 설정 관리 서버입니다.
+Edge Metrics Server is a centralized configuration management server for edge-metrics-exporter clients.
 
 - **Base URL**: `http://localhost:8081`
 - **Content-Type**: `application/json`
+
+## Authentication
+
+When the `API_KEY` environment variable is set, all endpoints require the `X-API-Key` header.
+
+```bash
+curl -H "X-API-Key: your-secret-key" http://localhost:8081/config
+```
+
+If `API_KEY` is not set (default), authentication is disabled and no header is required.
+
+**Response (401 Unauthorized)**
+```json
+{
+  "error": "Unauthorized"
+}
+```
 
 ---
 
@@ -13,7 +30,7 @@ Edge Metrics Server는 edge-metrics-exporter 클라이언트를 위한 중앙 �
 
 ### GET /config
 
-모든 디바이스의 설정 목록을 조회합니다.
+List all device configurations.
 
 **Request**
 ```
@@ -27,7 +44,7 @@ GET /config
     {
       "device_id": "edge-01",
       "device_type": "jetson_orin",
-      "port": 9100,
+      "port": 9102,
       "reload_port": 9101,
       "enabled_metrics": ["jetson_power_vdd_gpu_soc_watts"],
       "jetson": {"use_tegrastats": true}
@@ -35,7 +52,7 @@ GET /config
     {
       "device_id": "edge-02",
       "device_type": "raspberry_pi",
-      "port": 9100,
+      "port": 9102,
       "reload_port": 9101
     }
   ],
@@ -52,7 +69,7 @@ curl http://localhost:8081/config
 
 ### GET /config/{device_id}
 
-디바이스별 설정을 조회합니다.
+Get configuration for a specific device.
 
 **Request**
 ```
@@ -61,13 +78,13 @@ GET /config/{device_id}
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname (예: `edge-01`, `orin-desktop`) |
+| device_id | string | path | Device hostname (e.g., `edge-01`, `orin-desktop`) |
 
 **Response (200 OK)**
 ```json
 {
   "device_type": "jetson_orin",
-  "port": 9100,
+  "port": 9102,
   "reload_port": 9101,
   "enabled_metrics": [
     "jetson_power_vdd_gpu_soc_watts",
@@ -97,7 +114,7 @@ curl http://localhost:8081/config/edge-01
 
 ### PUT /config/{device_id}
 
-디바이스 설정을 생성하거나 업데이트합니다 (Upsert).
+Create or update a device configuration (upsert).
 
 **Request**
 ```
@@ -107,14 +124,14 @@ Content-Type: application/json
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname |
+| device_id | string | path | Device hostname |
 
 **Request Body**
 ```json
 {
   "device_type": "jetson_orin",
   "ip_address": "155.230.34.203",
-  "port": 9100,
+  "port": 9102,
   "reload_port": 9101,
   "enabled_metrics": [
     "jetson_power_vdd_gpu_soc_watts"
@@ -127,14 +144,14 @@ Content-Type: application/json
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| device_type | string | **Yes** | - | 디바이스 타입 |
-| ip_address | string | No | 기존 IP 유지 | 디바이스 IP 주소 (미제공 시 기존 IP 유지) |
-| port | integer | No | 9100 | Prometheus 메트릭 서버 포트 |
-| reload_port | integer | No | 9101 | 설정 리로드 트리거 포트 |
-| enabled_metrics | array | No | null | 수집할 메트릭 목록 (null=전체) |
-| * | object | No | - | 디바이스별 추가 설정 (shelly, jetson 등) |
+| device_type | string | **Yes** | - | Device type |
+| ip_address | string | No | keep existing | Device IP address (keeps existing IP if omitted) |
+| port | integer | No | 9102 | Prometheus metrics server port |
+| reload_port | integer | No | 9101 | Config reload trigger port |
+| enabled_metrics | array | No | null | Metrics to collect (null = all) |
+| * | object | No | - | Device-specific extra config (shelly, jetson, etc.) |
 
-**Response (200 OK) - 새 디바이스 등록**
+**Response (200 OK) — new device registered**
 ```json
 {
   "status": "registered",
@@ -143,7 +160,7 @@ Content-Type: application/json
 }
 ```
 
-**Response (200 OK) - 기존 디바이스 업데이트**
+**Response (200 OK) — existing device updated**
 ```json
 {
   "status": "updated",
@@ -152,7 +169,7 @@ Content-Type: application/json
 }
 ```
 
-> **Note**: `reload_triggered`가 `true`이면 exporter의 `/reload` 엔드포인트가 호출되어 설정이 즉시 적용됩니다.
+> **Note**: When `reload_triggered` is `true`, the exporter's `/reload` endpoint was called and the configuration is applied immediately.
 
 **Response (400 Bad Request)**
 ```json
@@ -169,7 +186,7 @@ Content-Type: application/json
 }
 ```
 
-**Example - 새 디바이스 등록**
+**Example — register new device**
 ```bash
 curl -X PUT http://localhost:8081/config/orin-desktop \
   -H "Content-Type: application/json" \
@@ -184,7 +201,7 @@ curl -X PUT http://localhost:8081/config/orin-desktop \
 
 ### POST /config/{device_id}
 
-새 디바이스를 등록합니다. 이미 존재하는 경우 409 Conflict를 반환합니다.
+Register a new device. Returns 409 Conflict if the device already exists.
 
 **Request**
 ```
@@ -194,26 +211,26 @@ Content-Type: application/json
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname |
+| device_id | string | path | Device hostname |
 
 **Request Body**
 ```json
 {
   "device_type": "jetson_orin",
   "ip_address": "155.230.34.203",
-  "port": 9100,
+  "port": 9102,
   "reload_port": 9101
 }
 ```
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| device_type | string | **Yes** | - | 디바이스 타입 |
-| ip_address | string | **Yes** | - | 디바이스 IP 주소 |
-| port | integer | No | 9100 | Prometheus 메트릭 서버 포트 |
-| reload_port | integer | No | 9101 | 설정 리로드 트리거 포트 |
-| enabled_metrics | array | No | null | 수집할 메트릭 목록 |
-| * | object | No | - | 디바이스별 추가 설정 (shelly, jetson 등) |
+| device_type | string | **Yes** | - | Device type |
+| ip_address | string | **Yes** | - | Device IP address |
+| port | integer | No | 9102 | Prometheus metrics server port |
+| reload_port | integer | No | 9101 | Config reload trigger port |
+| enabled_metrics | array | No | null | Metrics to collect |
+| * | object | No | - | Device-specific extra config (shelly, jetson, etc.) |
 
 **Response (201 Created)**
 ```json
@@ -228,13 +245,6 @@ Content-Type: application/json
 {
   "error": "ip_address_required",
   "message": "Device IP address must be specified in configuration"
-}
-```
-
-```json
-{
-  "error": "invalid_ip_address",
-  "message": "Invalid IP address format: not_an_ip"
 }
 ```
 
@@ -261,7 +271,7 @@ curl -X POST http://localhost:8081/config/new-device \
 
 ### PATCH /config/{device_id}
 
-디바이스 설정을 부분 업데이트합니다. 전달된 필드만 변경됩니다.
+Partially update a device configuration. Only provided fields are changed.
 
 **Request**
 ```
@@ -271,7 +281,7 @@ Content-Type: application/json
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname |
+| device_id | string | path | Device hostname |
 
 **Request Body**
 ```json
@@ -280,14 +290,14 @@ Content-Type: application/json
 }
 ```
 
-또는 IP 주소 변경:
+Or to change IP address:
 ```json
 {
   "ip_address": "155.230.34.210"
 }
 ```
 
-> 변경하고자 하는 필드만 포함하면 됩니다. `null`을 전달하면 필드를 기본값으로 리셋하거나 삭제합니다. (단, `ip_address`는 `null`이어도 기존 IP 유지)
+> Only include the fields you want to change. Passing `null` resets a field to its default or removes it. (Exception: `ip_address` with `null` keeps the existing IP.)
 
 **Response (200 OK)**
 ```json
@@ -317,12 +327,12 @@ Content-Type: application/json
 
 **Example**
 ```bash
-# 포트 변경
+# Change port
 curl -X PATCH http://localhost:8081/config/edge-01 \
   -H "Content-Type: application/json" \
   -d '{"port": 9200}'
 
-# IP 주소 변경
+# Change IP address
 curl -X PATCH http://localhost:8081/config/edge-01 \
   -H "Content-Type: application/json" \
   -d '{"ip_address": "155.230.34.210"}'
@@ -332,7 +342,7 @@ curl -X PATCH http://localhost:8081/config/edge-01 \
 
 ### DELETE /config/{device_id}
 
-디바이스 설정을 삭제합니다.
+Delete a device configuration.
 
 **Request**
 ```
@@ -341,7 +351,7 @@ DELETE /config/{device_id}
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname |
+| device_id | string | path | Device hostname |
 
 **Response (200 OK)**
 ```json
@@ -368,7 +378,7 @@ curl -X DELETE http://localhost:8081/config/edge-01
 
 ### GET /health
 
-서버 상태를 확인합니다.
+Check server health status.
 
 **Request**
 ```
@@ -393,7 +403,7 @@ curl http://localhost:8081/health
 
 ### GET /devices
 
-등록된 모든 디바이스와 상태를 조회합니다.
+List all registered devices and their status.
 
 **Request**
 ```
@@ -408,7 +418,7 @@ GET /devices
       "device_id": "edge-01",
       "device_type": "jetson_orin",
       "ip_address": "192.168.1.10",
-      "port": 9100,
+      "port": 9102,
       "reload_port": 9101,
       "status": "healthy",
       "last_seen": "2024-01-15T10:30:00Z"
@@ -417,7 +427,7 @@ GET /devices
       "device_id": "edge-02",
       "device_type": "jetson_xavier",
       "ip_address": "192.168.1.11",
-      "port": 9100,
+      "port": 9102,
       "reload_port": 9101,
       "status": "unreachable",
       "error": "connection refused"
@@ -431,23 +441,23 @@ GET /devices
 
 | Field | Type | Description |
 |-------|------|-------------|
-| devices | array | 디바이스 상태 목록 |
-| total | integer | 전체 디바이스 수 |
-| healthy | integer | 정상 디바이스 수 |
-| unhealthy | integer | 비정상 디바이스 수 |
+| devices | array | Device status list |
+| total | integer | Total device count |
+| healthy | integer | Healthy device count |
+| unhealthy | integer | Unhealthy device count |
 
 **Device Status Fields**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| device_id | string | 디바이스 ID |
-| device_type | string | 디바이스 타입 |
-| ip_address | string | 디바이스 IP 주소 |
-| port | integer | 메트릭 서버 포트 |
-| reload_port | integer | 리로드 트리거 포트 |
+| device_id | string | Device ID |
+| device_type | string | Device type |
+| ip_address | string | Device IP address |
+| port | integer | Metrics server port |
+| reload_port | integer | Reload trigger port |
 | status | string | healthy, unhealthy, unreachable, unknown |
-| last_seen | string | 마지막 응답 시간 (healthy인 경우) |
-| error | string | 에러 메시지 (비정상인 경우) |
+| last_seen | string | Last response time (when healthy) |
+| error | string | Error message (when unhealthy) |
 
 **Example**
 ```bash
@@ -458,7 +468,7 @@ curl http://localhost:8081/devices
 
 ### GET /devices/{device_id}/status
 
-특정 디바이스의 상태를 조회합니다.
+Get status for a specific device.
 
 **Request**
 ```
@@ -467,7 +477,7 @@ GET /devices/{device_id}/status
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname |
+| device_id | string | path | Device hostname |
 
 **Response (200 OK)**
 ```json
@@ -475,7 +485,7 @@ GET /devices/{device_id}/status
   "device_id": "edge-01",
   "device_type": "jetson_orin",
   "ip_address": "192.168.1.10",
-  "port": 9100,
+  "port": 9102,
   "reload_port": 9101,
   "status": "healthy",
   "last_seen": "2024-01-15T10:30:00Z"
@@ -499,11 +509,11 @@ curl http://localhost:8081/devices/edge-01/status
 
 ### PATCH /devices/{device_id}
 
-디바이스의 기본 정보만 수정합니다 (device_type, ip_address, port, reload_port).
-이 API는 데이터베이스만 업데이트하고 디바이스 reload는 트리거하지 않습니다.
+Update device basic info only (device_type, ip_address, port, reload_port).
+This API updates the database only and does **not** trigger a device reload.
 
-**수정 가능한 필드**: device_type, ip_address, port, reload_port
-**수정 불가능한 필드**: enabled_metrics, extra_config (jetson, shelly 등)
+**Modifiable fields**: device_type, ip_address, port, reload_port
+**Not modifiable**: enabled_metrics, extra_config (jetson, shelly, etc.)
 
 **Request**
 ```
@@ -512,19 +522,19 @@ PATCH /devices/{device_id}
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname |
+| device_id | string | path | Device hostname |
 
 **Request Body**
 ```json
 {
   "device_type": "jetson_orin",
   "ip_address": "192.168.1.20",
-  "port": 9100,
+  "port": 9102,
   "reload_port": 9101
 }
 ```
 
-모든 필드는 선택적입니다. 제공된 필드만 업데이트됩니다.
+All fields are optional. Only provided fields are updated.
 
 **Response (200 OK)**
 ```json
@@ -543,7 +553,7 @@ PATCH /devices/{device_id}
 }
 ```
 
-**Response (400 Bad Request - Invalid IP)**
+**Response (400 Bad Request)**
 ```json
 {
   "error": "invalid_ip_address",
@@ -553,32 +563,32 @@ PATCH /devices/{device_id}
 
 **Example**
 ```bash
-# IP 주소만 변경
+# Change IP only
 curl -X PATCH http://localhost:8081/devices/edge-01 \
   -H "Content-Type: application/json" \
   -d '{"ip_address": "192.168.1.20"}'
 
-# 여러 필드 동시 변경
+# Change multiple fields
 curl -X PATCH http://localhost:8081/devices/edge-01 \
   -H "Content-Type: application/json" \
   -d '{
     "device_type": "jetson_orin",
     "ip_address": "192.168.1.25",
-    "port": 9100,
+    "port": 9102,
     "reload_port": 9101
   }'
 ```
 
-**기존 API와의 차이점**
-- `PATCH /config/{device_id}`: 모든 필드 수정 가능, reload 트리거 O
-- `PATCH /devices/{device_id}`: 기본 필드만 수정 가능, reload 트리거 X
+**Difference from PATCH /config/{device_id}**:
+- `PATCH /config/{device_id}`: All fields modifiable, triggers reload
+- `PATCH /devices/{device_id}`: Basic fields only, no reload
 
 ---
 
 ### GET /devices/{device_id}/local-config
 
-디바이스의 로컬 config.yaml 파일 내용을 조회합니다.
-서버가 디바이스의 `GET :9101/config` 엔드포인트를 프록시하여 CORS 이슈를 해결합니다.
+Get a device's local config.yaml content.
+The server proxies the device's `GET :9101/config` endpoint to resolve CORS issues.
 
 **Request**
 ```
@@ -587,13 +597,13 @@ GET /devices/{device_id}/local-config
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname |
+| device_id | string | path | Device hostname |
 
 **Response (200 OK)**
 ```json
 {
   "device_type": "jetson_orin",
-  "port": 9100,
+  "port": 9102,
   "reload_port": 9101,
   "interval": 10,
   "metrics": {
@@ -650,7 +660,7 @@ curl http://localhost:8081/devices/edge-01/local-config
 
 ### POST /devices/{device_id}/reload
 
-특정 디바이스에 수동으로 reload를 트리거합니다.
+Manually trigger a reload on a specific device.
 
 **Request**
 ```
@@ -659,7 +669,7 @@ POST /devices/{device_id}/reload
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
-| device_id | string | path | 디바이스 hostname |
+| device_id | string | path | Device hostname |
 
 **Response (200 OK)**
 ```json
@@ -695,7 +705,7 @@ curl -X POST http://localhost:8081/devices/edge-01/reload
 
 ### POST /devices/reload
 
-모든 디바이스에 일괄 reload를 트리거합니다.
+Trigger a reload on all devices.
 
 **Request**
 ```
@@ -731,7 +741,7 @@ curl -X POST http://localhost:8081/devices/reload
 
 ### GET /metrics/summary
 
-전체 시스템 요약 통계를 조회합니다.
+Get system-wide summary statistics.
 
 **Request**
 ```
@@ -763,7 +773,7 @@ curl http://localhost:8081/metrics/summary
 
 ### GET /kubernetes/status
 
-전체 Kubernetes 동기화 상태를 조회합니다.
+Get overall Kubernetes sync status.
 
 **Request**
 ```
@@ -772,7 +782,7 @@ GET /kubernetes/status?namespace=monitoring
 
 | Parameter | Type | Location | Default | Description |
 |-----------|------|----------|---------|-------------|
-| namespace | string | query | monitoring | 조회할 네임스페이스 |
+| namespace | string | query | monitoring | Target namespace |
 
 **Response (200 OK)**
 ```json
@@ -815,7 +825,7 @@ curl http://localhost:8081/kubernetes/status?namespace=monitoring
 
 ### GET /kubernetes/health
 
-Kubernetes 연결 상태 및 RBAC 권한을 확인합니다.
+Check Kubernetes connectivity and RBAC permissions.
 
 **Request**
 ```
@@ -824,7 +834,7 @@ GET /kubernetes/health?namespace=monitoring
 
 | Parameter | Type | Location | Default | Description |
 |-----------|------|----------|---------|-------------|
-| namespace | string | query | monitoring | 확인할 네임스페이스 |
+| namespace | string | query | monitoring | Target namespace |
 
 **Response (200 OK)**
 ```json
@@ -859,7 +869,7 @@ curl http://localhost:8081/kubernetes/health
 
 ### POST /kubernetes/sync
 
-현재 healthy 상태인 모든 디바이스를 Kubernetes Service + Endpoints로 동기화합니다.
+Sync all healthy devices to Kubernetes as Service + Endpoints.
 
 **Request**
 ```
@@ -876,7 +886,7 @@ Content-Type: application/json
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| namespace | string | No | monitoring | 동기화 대상 Kubernetes 네임스페이스 |
+| namespace | string | No | monitoring | Target Kubernetes namespace |
 
 **Response (200 OK)**
 ```json
@@ -917,21 +927,21 @@ curl -X POST http://localhost:8081/kubernetes/sync \
   -d '{"namespace": "monitoring"}'
 ```
 
-**동작:**
-1. GET /devices API를 호출하여 healthy 디바이스 목록 조회
-2. 각 디바이스마다 Service + Endpoints 리소스 생성/업데이트
-   - Service 이름: `edge-device-{device_id}`
-   - Endpoints IP: 디바이스의 `ip_address`
-   - 포트: 디바이스의 `port` (기본 9100)
-   - 레이블: `app=edge-exporter`, `device_id`, `device_type`, `managed_by=edge-metrics-server`
-3. DB에는 있지만 unhealthy하거나 삭제된 디바이스의 리소스는 삭제
-4. 결과 반환
+**Behavior:**
+1. Queries healthy device list via GET /devices
+2. For each device, creates/updates Service + Endpoints
+   - Service name: `edge-device-{device_id}`
+   - Endpoints IP: device's `ip_address`
+   - Port: device's `port` (default 9102)
+   - Labels: `app=edge-exporter`, `device_id`, `device_type`, `managed_by=edge-metrics-server`
+3. Deletes resources for devices that are unhealthy or removed from DB
+4. Returns results
 
 ---
 
 ### POST /kubernetes/sync/{device_id}
 
-특정 디바이스만 Kubernetes에 동기화합니다.
+Sync a specific device to Kubernetes.
 
 **Request**
 ```
@@ -940,8 +950,8 @@ POST /kubernetes/sync/{device_id}?namespace=monitoring
 
 | Parameter | Type | Location | Default | Description |
 |-----------|------|----------|---------|-------------|
-| device_id | string | path | - | 동기화할 디바이스 ID |
-| namespace | string | query | monitoring | 동기화 대상 네임스페이스 |
+| device_id | string | path | - | Device ID to sync |
+| namespace | string | query | monitoring | Target namespace |
 
 **Response (200 OK)**
 ```json
@@ -952,21 +962,13 @@ POST /kubernetes/sync/{device_id}?namespace=monitoring
 }
 ```
 
-**Response (200 OK - Failed)**
+**Response (200 OK — failed)**
 ```json
 {
   "device_id": "edge-01",
   "service": "edge-device-edge-01",
   "status": "failed",
   "error": "device is not healthy"
-}
-```
-
-**Response (503 Service Unavailable)**
-```json
-{
-  "error": "Kubernetes client not initialized",
-  "message": "Server not running in Kubernetes environment or kubeconfig not found"
 }
 ```
 
@@ -979,7 +981,7 @@ curl -X POST http://localhost:8081/kubernetes/sync/edge-01?namespace=monitoring
 
 ### GET /kubernetes/manifests
 
-Healthy 디바이스들의 Kubernetes YAML 매니페스트를 생성합니다 (수동 적용용).
+Generate Kubernetes YAML manifests for healthy devices (for manual apply).
 
 **Request**
 ```
@@ -988,7 +990,7 @@ GET /kubernetes/manifests?namespace=monitoring
 
 | Parameter | Type | Location | Default | Description |
 |-----------|------|----------|---------|-------------|
-| namespace | string | query | monitoring | 매니페스트 생성 대상 네임스페이스 |
+| namespace | string | query | monitoring | Target namespace |
 
 **Response (200 OK)**
 ```yaml
@@ -1010,8 +1012,8 @@ spec:
   clusterIP: None
   ports:
   - name: metrics
-    port: 9100
-    targetPort: 9100
+    port: 9102
+    targetPort: 9102
     protocol: TCP
 ---
 apiVersion: v1
@@ -1028,32 +1030,30 @@ subsets:
   - ip: 192.168.1.10
   ports:
   - name: metrics
-    port: 9100
+    port: 9102
     protocol: TCP
-
-# ... (추가 디바이스들)
 ```
 
 **Example**
 ```bash
-# YAML 생성 및 저장
+# Generate and save
 curl http://localhost:8081/kubernetes/manifests?namespace=monitoring > edge-devices.yaml
 
-# Kubernetes에 적용
+# Apply to Kubernetes
 kubectl apply -f edge-devices.yaml
 ```
 
-**동작:**
-1. 모든 디바이스 설정 조회
-2. 각 디바이스의 health 체크
-3. Healthy 디바이스들만 YAML 매니페스트 생성
-4. text/plain으로 반환
+**Behavior:**
+1. Queries all device configurations
+2. Runs health check for each device
+3. Generates YAML manifests for healthy devices only
+4. Returns as text/plain
 
 ---
 
 ### GET /kubernetes/resources/{device_id}
 
-특정 디바이스의 Kubernetes 리소스 상세 정보를 조회합니다.
+Get detailed Kubernetes resource info for a specific device.
 
 **Request**
 ```
@@ -1062,8 +1062,8 @@ GET /kubernetes/resources/{device_id}?namespace=monitoring
 
 | Parameter | Type | Location | Default | Description |
 |-----------|------|----------|---------|-------------|
-| device_id | string | path | - | 조회할 디바이스 ID |
-| namespace | string | query | monitoring | 조회할 네임스페이스 |
+| device_id | string | path | - | Device ID |
+| namespace | string | query | monitoring | Target namespace |
 
 **Response (200 OK)**
 ```json
@@ -1076,25 +1076,17 @@ GET /kubernetes/resources/{device_id}?namespace=monitoring
     "ports": [
       {
         "name": "metrics",
-        "port": 9100
+        "port": 9102
       }
     ]
   },
   "endpoints": {
     "name": "edge-device-edge-01",
     "exists": true,
-    "ready_addresses": ["192.168.1.10:9100"],
+    "ready_addresses": ["192.168.1.10:9102"],
     "not_ready_addresses": []
   },
-  "prometheus_target": "http://edge-device-edge-01.monitoring.svc:9100/metrics"
-}
-```
-
-**Response (503 Service Unavailable)**
-```json
-{
-  "error": "Kubernetes client not initialized",
-  "message": "Server not running in Kubernetes environment or kubeconfig not found"
+  "prometheus_target": "http://edge-device-edge-01.monitoring.svc:9102/metrics"
 }
 ```
 
@@ -1107,7 +1099,7 @@ curl http://localhost:8081/kubernetes/resources/edge-01?namespace=monitoring
 
 ### DELETE /kubernetes/resources/{device_id}
 
-특정 디바이스의 Kubernetes 리소스를 삭제합니다.
+Delete Kubernetes resources for a specific device.
 
 **Request**
 ```
@@ -1116,8 +1108,8 @@ DELETE /kubernetes/resources/{device_id}?namespace=monitoring
 
 | Parameter | Type | Location | Default | Description |
 |-----------|------|----------|---------|-------------|
-| device_id | string | path | - | 삭제할 디바이스 ID |
-| namespace | string | query | monitoring | 삭제할 네임스페이스 |
+| device_id | string | path | - | Device ID |
+| namespace | string | query | monitoring | Target namespace |
 
 **Response (200 OK)**
 ```json
@@ -1125,24 +1117,6 @@ DELETE /kubernetes/resources/{device_id}?namespace=monitoring
   "device_id": "edge-01",
   "service": "edge-device-edge-01",
   "status": "deleted"
-}
-```
-
-**Response (200 OK - Failed)**
-```json
-{
-  "device_id": "edge-01",
-  "service": "edge-device-edge-01",
-  "status": "failed",
-  "error": "delete service: services \"edge-device-edge-01\" not found"
-}
-```
-
-**Response (503 Service Unavailable)**
-```json
-{
-  "error": "Kubernetes client not initialized",
-  "message": "Server not running in Kubernetes environment or kubeconfig not found"
 }
 ```
 
@@ -1155,7 +1129,7 @@ curl -X DELETE http://localhost:8081/kubernetes/resources/edge-01?namespace=moni
 
 ### DELETE /kubernetes/cleanup
 
-monitoring 네임스페이스의 모든 edge-device-* 리소스를 삭제합니다.
+Delete all edge-device-* resources in the namespace.
 
 **Request**
 ```
@@ -1164,7 +1138,7 @@ DELETE /kubernetes/cleanup?namespace=monitoring
 
 | Parameter | Type | Location | Default | Description |
 |-----------|------|----------|---------|-------------|
-| namespace | string | query | monitoring | 정리할 네임스페이스 |
+| namespace | string | query | monitoring | Target namespace |
 
 **Response (200 OK)**
 ```json
@@ -1182,31 +1156,23 @@ DELETE /kubernetes/cleanup?namespace=monitoring
 }
 ```
 
-**Response (503 Service Unavailable)**
-```json
-{
-  "error": "Kubernetes client not initialized",
-  "message": "Server not running in Kubernetes environment or kubeconfig not found"
-}
-```
-
 **Example**
 ```bash
 curl -X DELETE http://localhost:8081/kubernetes/cleanup?namespace=monitoring
 ```
 
-**동작:**
-1. `managed_by=edge-metrics-server` 레이블을 가진 모든 Service 조회
-2. 모든 Service 삭제
-3. `managed_by=edge-metrics-server` 레이블을 가진 모든 Endpoints 조회
-4. 모든 Endpoints 삭제
-5. 삭제된 리소스 목록 반환
+**Behavior:**
+1. Lists all Services with `managed_by=edge-metrics-server` label
+2. Deletes all matching Services
+3. Lists all Endpoints with `managed_by=edge-metrics-server` label
+4. Deletes all matching Endpoints
+5. Returns deleted resource list
 
 ---
 
 ## Device Types
 
-지원되는 디바이스 타입:
+Supported device types:
 
 | device_type | Description | Extra Config |
 |-------------|-------------|--------------|
@@ -1258,7 +1224,7 @@ curl -X DELETE http://localhost:8081/kubernetes/cleanup?namespace=monitoring
 
 ## Error Responses
 
-모든 에러 응답은 다음 형식을 따릅니다:
+All error responses follow this format:
 
 ```json
 {
@@ -1270,23 +1236,26 @@ curl -X DELETE http://localhost:8081/kubernetes/cleanup?namespace=monitoring
 
 | Status Code | Description |
 |-------------|-------------|
-| 200 | 성공 |
-| 201 | 생성됨 (POST) |
-| 400 | 잘못된 요청 (필수 필드 누락, 잘못된 JSON, 잘못된 IP 주소) |
-| 404 | 디바이스를 찾을 수 없음 |
-| 409 | 충돌 (이미 존재하는 디바이스) |
-| 500 | 서버 내부 오류 |
+| 200 | Success |
+| 201 | Created (POST) |
+| 400 | Bad request (missing required field, invalid JSON, invalid IP address) |
+| 401 | Unauthorized (invalid or missing API key) |
+| 404 | Device not found |
+| 409 | Conflict (device already exists) |
+| 500 | Internal server error |
+| 503 | Service unavailable (Kubernetes client not initialized) |
 
-**주요 에러 타입:**
+**Common Error Types:**
 
 | Error Code | Description | HTTP Status |
 |------------|-------------|-------------|
-| `Missing required field` | 필수 필드 누락 (device_type) | 400 |
-| `ip_address_required` | IP 주소 필수 (POST 요청 시) | 400 |
-| `invalid_ip_address` | 잘못된 IP 주소 형식 | 400 |
-| `Device already exists` | 이미 존재하는 디바이스 (POST) | 409 |
-| `Device not found` | 디바이스를 찾을 수 없음 | 404 |
-| `Internal server error` | 서버 내부 오류 | 500 |
+| `Unauthorized` | Invalid or missing API key | 401 |
+| `Missing required field` | Required field missing (device_type) | 400 |
+| `ip_address_required` | IP address required (POST request) | 400 |
+| `invalid_ip_address` | Invalid IP address format | 400 |
+| `Device already exists` | Device already exists (POST) | 409 |
+| `Device not found` | Device not found | 404 |
+| `Internal server error` | Internal server error | 500 |
 
 ---
 
@@ -1296,7 +1265,7 @@ curl -X DELETE http://localhost:8081/kubernetes/cleanup?namespace=monitoring
 CREATE TABLE devices (
     device_id TEXT PRIMARY KEY,
     device_type TEXT NOT NULL,
-    port INTEGER DEFAULT 9100,
+    port INTEGER DEFAULT 9102,
     reload_port INTEGER DEFAULT 9101,
     enabled_metrics TEXT,    -- JSON array
     extra_config TEXT,       -- JSON object
@@ -1312,71 +1281,75 @@ CREATE TABLE devices (
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| PORT | 8081 | 서버 포트 |
-| DB_PATH | ./config.db | SQLite 데이터베이스 경로 |
+| PORT | 8081 | Server port |
+| DB_PATH | ./config.db | SQLite database path |
+| API_KEY | (empty) | API key for X-API-Key authentication (disabled when empty) |
 
 ---
 
 ## Running the Server
 
 ```bash
-# 기본 실행
+# Default
 ./edge-metrics-server
 
-# 환경변수 지정
+# With environment variables
 PORT=8080 DB_PATH=/data/config.db ./edge-metrics-server
+
+# With API key authentication
+API_KEY=my-secret-key ./edge-metrics-server
 ```
 
 ---
 
 ## Grafana Dashboards
 
-Edge Metrics Server는 수집된 메트릭을 시각화하기 위한 Grafana 대시보드를 제공합니다.
+Edge Metrics Server provides Grafana dashboards for visualizing collected metrics.
 
 ### 1. Edge Devices Power & Energy Monitoring
-**파일**: `manifests/grafana-dashboard.json`
+**File**: `manifests/grafana-dashboard.json`
 
-전체 edge 디바이스의 전력 및 에너지 모니터링 대시보드입니다.
+Dashboard for power and energy monitoring across all edge devices.
 
-**주요 패널:**
-- 실시간 전력 메트릭 (모든 전력 메트릭)
-- 디바이스별 전력 순위 (Boxplot)
-- 디바이스별 전력 사용 세부 내역 (Pie Chart)
+**Key Panels:**
+- Real-time power metrics (all power metrics)
+- Device power ranking (Boxplot)
+- Per-device power breakdown (Pie Chart)
 
-### 2. Jetson Power Analysis (이기종 디바이스)
-**파일**: `manifests/grafana-dashboard-jetson-power.json`
+### 2. Jetson Power Analysis (Heterogeneous Devices)
+**File**: `manifests/grafana-dashboard-jetson-power.json`
 **UID**: `jetson-power-analysis`
 
-Jetson Nano, Xavier, Orin 이기종 디바이스의 전력 분석 전용 대시보드입니다.
+Dashboard for power analysis across heterogeneous Jetson devices (Nano, Xavier, Orin).
 
-**주요 패널:**
-1. **디바이스 간 전력 비교** (외부 플러그 기준)
-   - Shelly 플러그로 측정된 보드 전체 전력을 기준으로 공정하게 비교
-   - 모든 선택된 디바이스를 한 그래프에 표시
+**Key Panels:**
+1. **Cross-Device Power Comparison** (external plug baseline)
+   - Compares total board power measured via Shelly plugs
+   - All selected devices on a single graph
 
-2. **전력 비교 (내부 vs 외부)** (Repeat Panel by hostname)
-   - 내부 Total Power: 모델별 자동 선택
+2. **Power Comparison (Internal vs External)** (repeat panel by hostname)
+   - Internal Total Power: auto-selected per model
      - Nano: `pom_5v_in_watts`
      - Xavier: `vdd_in_watts`
-     - Orin: 4개 레일 합산 (`vdd_cpu_cv + vdd_gpu_soc + vddq_vdd2_1v8ao + vin_sys_5v0`)
-   - 외부 Shelly: 실제 보드 전체 전력
+     - Orin: sum of 4 rails (`vdd_cpu_cv + vdd_gpu_soc + vddq_vdd2_1v8ao + vin_sys_5v0`)
+   - External Shelly: actual total board power
 
-3. **내부 레일 분해** (Repeat Panel by hostname)
-   - Stacked Area 그래프로 각 디바이스의 모든 내부 전력 레일 표시
-   - 모델별로 존재하는 레일만 자동 표시
+3. **Internal Rail Breakdown** (repeat panel by hostname)
+   - Stacked Area graph showing all internal power rails per device
+   - Auto-displays only available rails per model
 
-4. **Unaccounted Power** (Repeat Panel by hostname)
-   - `(Shelly - 내부 Total) / Shelly * 100` 비율(%) 표시
-   - 색상: Green → Yellow → Orange → Red (비율에 따라)
-   - 전압변환 손실, 주변기기, 미측정 레일 등의 전력 파악
+4. **Unaccounted Power** (repeat panel by hostname)
+   - `(Shelly - Internal Total) / Shelly * 100` as percentage
+   - Color: Green -> Yellow -> Orange -> Red (by ratio)
+   - Identifies voltage conversion losses, peripherals, unmeasured rails
 
 **Variables:**
-- `device_type`: 디바이스 타입 필터 (Multi-select)
-- `hostname`: 호스트명 필터 (Multi-select)
+- `device_type`: Device type filter (multi-select)
+- `hostname`: Hostname filter (multi-select)
 
-**특징:**
-- Orin의 Total Power는 4개 레일 합산으로 자동 계산
-- PromQL `or` 연산자로 모델별 메트릭 자동 선택
-- Repeat Panel로 디바이스별 상세 분석 자동 생성
+**Features:**
+- Orin Total Power is auto-calculated from 4-rail sum
+- PromQL `or` operator for automatic per-model metric selection
+- Repeat Panel for auto-generated per-device detail views
 
 ---
