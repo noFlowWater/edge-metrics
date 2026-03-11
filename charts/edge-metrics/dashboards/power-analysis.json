@@ -116,7 +116,7 @@
           "refId": "A"
         }
       ],
-      "title": "디바이스 간 실시간 전력 비교",
+      "title": "Real-time Power Comparison Across Devices",
       "type": "timeseries"
     },
     {
@@ -161,7 +161,7 @@
           "name": "default"
         },
         "visualEditor": {
-          "code": "const data = context.panel.data.series[0];\n\nif (!data || !data.fields || data.fields.length === 0) {\n  return {};\n}\n\n// 전체 필드 이름 한 번 모아서 보자 (디버깅용)\nconst fieldNames = data.fields.map(f => f.name);\n\n// 🔧 정렬 기준: 'median' 또는 'mean'\nconst SORT_BY = 'mean';\n\n// 필드 찾기 (필요하면 원래 이름 + Value #X 둘 다 허용)\nconst hostnameField = data.fields.find(f => f.name === 'hostname');\nconst minField = data.fields.find(f => f.name === 'min' || f.name === 'Value #A');\nconst q1Field = data.fields.find(f => f.name === 'q1' || f.name === 'Value #B');\nconst medianField = data.fields.find(f => f.name === 'median' || f.name === 'Value #C');\nconst q3Field = data.fields.find(f => f.name === 'q3' || f.name === 'Value #D');\nconst maxField = data.fields.find(f => f.name === 'max' || f.name === 'Value #E');\n// ⭐ mean 은 rename이 안 되었을 수도 있으니 둘 다 체크\nconst meanField = data.fields.find(f => f.name === 'mean' || f.name === 'Value #F');\n\nif (!hostnameField || !minField || !q1Field || !medianField || !q3Field || !maxField || !meanField) {\n  // 일단 뭐가 있는지 패널 제목으로 찍어서 확인\n  return {\n    title: {\n      text: 'Missing fields. Found: ' + fieldNames.join(', ')\n    }\n  };\n}\n\n// 디바이스별 데이터 수집\nconst deviceData = [];\nconst len = hostnameField.values.length;\n\nfor (let i = 0; i < len; i++) {\n  const hostname = hostnameField.values.get ? hostnameField.values.get(i) : hostnameField.values[i];\n  const min = Number(minField.values.get ? minField.values.get(i) : minField.values[i]);\n  const q1 = Number(q1Field.values.get ? q1Field.values.get(i) : q1Field.values[i]);\n  const median = Number(medianField.values.get ? medianField.values.get(i) : medianField.values[i]);\n  const q3 = Number(q3Field.values.get ? q3Field.values.get(i) : q3Field.values[i]);\n  const max = Number(maxField.values.get ? maxField.values.get(i) : maxField.values[i]);\n  const mean = Number(meanField.values.get ? meanField.values.get(i) : meanField.values[i]);\n\n  deviceData.push({ hostname, min, q1, median, q3, max, mean });\n}\n\n// 정렬\ndeviceData.sort((a, b) => b[SORT_BY] - a[SORT_BY]);\n\nconst categories = deviceData.map(d => d.hostname);\nconst boxplotData = deviceData.map(d => [d.min, d.q1, d.median, d.q3, d.max]);\nconst meanScatterData = deviceData.map(d => [d.hostname, d.mean]);\n\nreturn {\n  tooltip: {\n    trigger: 'item',\n    formatter: function (param) {\n      const d = deviceData[param.dataIndex];\n\n      if (param.seriesType === 'boxplot') {\n        return [\n          'Device: ' + d.hostname,\n          'Max: ' + d.max.toFixed(2) + ' W',\n          'Q3: ' + d.q3.toFixed(2) + ' W',\n          'Median: ' + d.median.toFixed(2) + ' W',\n          'Q1: ' + d.q1.toFixed(2) + ' W',\n          'Min: ' + d.min.toFixed(2) + ' W',\n          'Mean: ' + d.mean.toFixed(2) + ' W'\n        ].join('<br/>');\n      }\n\n      if (param.seriesName === 'Mean') {\n        return [\n          'Device: ' + d.hostname,\n          'Mean: ' + d.mean.toFixed(2) + ' W'\n        ].join('<br/>');\n      }\n\n      return '';\n    }\n  },\n  grid: {\n    left: '10%',\n    right: '10%',\n    bottom: '15%',\n    top: '10%'\n  },\n  xAxis: {\n    type: 'category',\n    data: categories,\n    name: 'Device',\n    nameLocation: 'middle',\n    nameGap: 40,\n    axisLabel: {\n      rotate: 0,\n      fontSize: 13,\n      margin: 10,\n      padding: [0, 0, 0, 0]\n    }\n  },\n  yAxis: {\n    type: 'value',\n    name: 'Power (W)',\n    nameLocation: 'middle',\n    nameGap: 50,\n    scale: true\n  },\n  series: [\n    {\n      name: 'Power',\n      type: 'boxplot',\n      data: boxplotData,\n      itemStyle: {\n        color: '#91CBFF',\n        borderColor: '#5FA8E8'\n      }\n    },\n    {\n      name: 'Mean',\n      type: 'scatter',\n      data: meanScatterData,\n      symbolSize: 6,\n      itemStyle: {\n        color: '#d62728'\n      }\n    }\n  ]\n};\n",
+          "code": "const data = context.panel.data.series[0];\n\nif (!data || !data.fields || data.fields.length === 0) {\n  return {};\n}\n\n// Collect all field names for debugging\nconst fieldNames = data.fields.map(f => f.name);\n\n// Sort criterion: 'median' or 'mean'\nconst SORT_BY = 'mean';\n\n// Find fields (accept both renamed and default Value #X names)\nconst hostnameField = data.fields.find(f => f.name === 'hostname');\nconst minField = data.fields.find(f => f.name === 'min' || f.name === 'Value #A');\nconst q1Field = data.fields.find(f => f.name === 'q1' || f.name === 'Value #B');\nconst medianField = data.fields.find(f => f.name === 'median' || f.name === 'Value #C');\nconst q3Field = data.fields.find(f => f.name === 'q3' || f.name === 'Value #D');\nconst maxField = data.fields.find(f => f.name === 'max' || f.name === 'Value #E');\n// mean may not be renamed, so check both names\nconst meanField = data.fields.find(f => f.name === 'mean' || f.name === 'Value #F');\n\nif (!hostnameField || !minField || !q1Field || !medianField || !q3Field || !maxField || !meanField) {\n  // Show available fields in panel title for debugging\n  return {\n    title: {\n      text: 'Missing fields. Found: ' + fieldNames.join(', ')\n    }\n  };\n}\n\n// Collect per-device data\nconst deviceData = [];\nconst len = hostnameField.values.length;\n\nfor (let i = 0; i < len; i++) {\n  const hostname = hostnameField.values.get ? hostnameField.values.get(i) : hostnameField.values[i];\n  const min = Number(minField.values.get ? minField.values.get(i) : minField.values[i]);\n  const q1 = Number(q1Field.values.get ? q1Field.values.get(i) : q1Field.values[i]);\n  const median = Number(medianField.values.get ? medianField.values.get(i) : medianField.values[i]);\n  const q3 = Number(q3Field.values.get ? q3Field.values.get(i) : q3Field.values[i]);\n  const max = Number(maxField.values.get ? maxField.values.get(i) : maxField.values[i]);\n  const mean = Number(meanField.values.get ? meanField.values.get(i) : meanField.values[i]);\n\n  deviceData.push({ hostname, min, q1, median, q3, max, mean });\n}\n\n// Sort\ndeviceData.sort((a, b) => b[SORT_BY] - a[SORT_BY]);\n\nconst categories = deviceData.map(d => d.hostname);\nconst boxplotData = deviceData.map(d => [d.min, d.q1, d.median, d.q3, d.max]);\nconst meanScatterData = deviceData.map(d => [d.hostname, d.mean]);\n\nreturn {\n  tooltip: {\n    trigger: 'item',\n    formatter: function (param) {\n      const d = deviceData[param.dataIndex];\n\n      if (param.seriesType === 'boxplot') {\n        return [\n          'Device: ' + d.hostname,\n          'Max: ' + d.max.toFixed(2) + ' W',\n          'Q3: ' + d.q3.toFixed(2) + ' W',\n          'Median: ' + d.median.toFixed(2) + ' W',\n          'Q1: ' + d.q1.toFixed(2) + ' W',\n          'Min: ' + d.min.toFixed(2) + ' W',\n          'Mean: ' + d.mean.toFixed(2) + ' W'\n        ].join('<br/>');\n      }\n\n      if (param.seriesName === 'Mean') {\n        return [\n          'Device: ' + d.hostname,\n          'Mean: ' + d.mean.toFixed(2) + ' W'\n        ].join('<br/>');\n      }\n\n      return '';\n    }\n  },\n  grid: {\n    left: '10%',\n    right: '10%',\n    bottom: '15%',\n    top: '10%'\n  },\n  xAxis: {\n    type: 'category',\n    data: categories,\n    name: 'Device',\n    nameLocation: 'middle',\n    nameGap: 40,\n    axisLabel: {\n      rotate: 0,\n      fontSize: 13,\n      margin: 10,\n      padding: [0, 0, 0, 0]\n    }\n  },\n  yAxis: {\n    type: 'value',\n    name: 'Power (W)',\n    nameLocation: 'middle',\n    nameGap: 50,\n    scale: true\n  },\n  series: [\n    {\n      name: 'Power',\n      type: 'boxplot',\n      data: boxplotData,\n      itemStyle: {\n        color: '#91CBFF',\n        borderColor: '#5FA8E8'\n      }\n    },\n    {\n      name: 'Mean',\n      type: 'scatter',\n      data: meanScatterData,\n      symbolSize: 6,\n      itemStyle: {\n        color: '#d62728'\n      }\n    }\n  ]\n};\n",
           "dataset": [],
           "series": []
         }
@@ -229,7 +229,7 @@
           "refId": "F"
         }
       ],
-      "title": "디바이스별 전력 순위 (Power Ranking by Device)",
+      "title": "Power Ranking by Device",
       "transformations": [
         {
           "id": "merge",
@@ -406,7 +406,7 @@
           "refId": "B"
         }
       ],
-      "title": "$hostname - 전력 비교 (내부 vs 외부)",
+      "title": "$hostname - Power Comparison (Internal vs External)",
       "type": "timeseries"
     },
     {
@@ -506,7 +506,7 @@
           "refId": "A"
         }
       ],
-      "title": "$hostname - 내부 레일 분해",
+      "title": "$hostname - Internal Power Rail Breakdown",
       "type": "timeseries"
     },
     {

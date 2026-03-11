@@ -5,6 +5,9 @@
 CLAUDE.md
 AGENTS.md
 
+# Site-specific overrides (create from values-cluster.example.yaml)
+charts/edge-metrics/values-cluster.yaml
+
 # OS
 .DS_Store
 Thumbs.db
