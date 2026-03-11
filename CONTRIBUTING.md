@@ -4,8 +4,8 @@
 
 ### Prerequisites
 
-- Go 1.23+
-- Python 3.10+
+- Go 1.25+
+- Python 3.12+
 - Helm 3.x
 - Docker
 - k3d (for local cluster testing)
@@ -60,7 +60,6 @@ edge-metrics/
 ├── exporter/        # Python metrics exporter (Prometheus)
 ├── front/           # React frontend dashboard
 ├── charts/          # Helm umbrella chart
-├── clusters/        # Flux v2 GitOps manifests
 ├── e2e/             # End-to-end test scripts
 └── .github/         # CI/CD workflows
 ```

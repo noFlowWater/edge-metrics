@@ -7,8 +7,8 @@ BUILDER     ?= edge-builder
 PLATFORMS   ?= linux/amd64,linux/arm64
 CACHE_REPO  ?= $(REGISTRY)/buildcache
 
-EXPORTER_TAG ?= $(shell python3 -c "import yaml; d=yaml.safe_load(open('charts/edge-metrics/values-cluster.yaml')); print(d['exporter']['image']['tag'])")
-SERVER_TAG   ?= $(shell python3 -c "import yaml; d=yaml.safe_load(open('charts/edge-metrics/values-cluster.yaml')); print(d['server']['image']['tag'])")
+EXPORTER_TAG ?= $(shell python3 -c "import yaml; d=yaml.safe_load(open('charts/edge-metrics/values-cluster.yaml')); print(d['exporter']['image']['tag'])" 2>/dev/null || echo latest)
+SERVER_TAG   ?= $(shell python3 -c "import yaml; d=yaml.safe_load(open('charts/edge-metrics/values-cluster.yaml')); print(d['server']['image']['tag'])" 2>/dev/null || echo latest)
 
 build-exporter:
 	docker buildx build --builder $(BUILDER) --platform $(PLATFORMS) \
@@ -26,7 +26,7 @@ build-all: build-exporter build-server
 
 deploy:
 	helm upgrade --install edge-metrics charts/edge-metrics \
-		-n monitoring -f charts/edge-metrics/values-cluster.yaml
+		-n monitoring $(if $(wildcard charts/edge-metrics/values-cluster.yaml),-f charts/edge-metrics/values-cluster.yaml)
 
 # Go server tests
 test-server:
