@@ -7,6 +7,7 @@ on:
       - "server/**"
       - "exporter/**"
       - "front/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
