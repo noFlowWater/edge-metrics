@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: gomod
     directory: /server
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
       - go
@@ -11,7 +11,7 @@ updates:
   - package-ecosystem: pip
     directory: /exporter
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
       - python
@@ -19,7 +19,7 @@ updates:
   - package-ecosystem: npm
     directory: /front
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
       - npm
@@ -31,27 +31,3 @@ updates:
     labels:
       - dependencies
       - ci
-
-  - package-ecosystem: docker
-    directory: /server
-    schedule:
-      interval: weekly
-    labels:
-      - dependencies
-      - docker
-
-  - package-ecosystem: docker
-    directory: /exporter
-    schedule:
-      interval: weekly
-    labels:
-      - dependencies
-      - docker
-
-  - package-ecosystem: docker
-    directory: /front
-    schedule:
-      interval: weekly
-    labels:
-      - dependencies
-      - docker

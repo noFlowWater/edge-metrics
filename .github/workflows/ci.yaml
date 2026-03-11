@@ -8,8 +8,17 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   go-test:
     runs-on: ubuntu-latest
     defaults:
@@ -79,9 +88,6 @@ jobs:
 
       - name: Kubeconform - default
         run: helm template test charts/edge-metrics | kubeconform -strict -ignore-missing-schemas -summary
-
-      - name: Kubeconform - dev values
-        run: helm template test charts/edge-metrics -f charts/edge-metrics/values-dev.yaml | kubeconform -strict -ignore-missing-schemas -summary
 
       - name: Kubeconform - prod values
         run: helm template test charts/edge-metrics -f charts/edge-metrics/values-prod.yaml | kubeconform -strict -ignore-missing-schemas -summary

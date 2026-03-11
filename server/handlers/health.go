@@ -6,7 +6,18 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
+
+// Health handles GET /health
+func (h *Handler) Health(c *gin.Context) {
+	c.JSON(http.StatusOK, models.HealthResponse{
+		Status:  "healthy",
+		Service: "config-server",
+		Version: "0.1.0",
+	})
+}
 
 // CheckDeviceHealth checks device health and returns detailed status
 func CheckDeviceHealth(device models.DeviceConfig) models.DeviceStatus {
