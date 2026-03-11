@@ -1,0 +1,91 @@
+# Site-specific overrides for your edge cluster deployment.
+#
+# Copy this file and fill in your values:
+#   cp values-cluster.example.yaml values-cluster.yaml
+#
+# Then deploy with:
+#   helm install edge-metrics . \
+#     -f values-prod.yaml \
+#     -f values-cluster.yaml \
+#     --namespace monitoring --create-namespace
+
+server:
+  enabled: true
+  grafanaDashboard:
+    enabled: true
+  image:
+    repository: your-registry/edge-metrics-server
+    tag: "v0.2.2"
+  env:
+    DB_PATH: /data/config.db
+    PORT: "8081"
+    SYNC_INTERVAL: "0"
+    SYNC_NAMESPACE: monitoring
+    APP_VERSION: "v0.2.2"
+    # List your edge devices here. Each entry needs:
+    #   device_id  — unique hostname or identifier
+    #   device_type — one of: jetson_orin, jetson_nano, jetson_xavier,
+    #                 raspberry_pi, orange_pi, lattepanda, or your custom type
+    #   ip_address — reachable IP from the cluster network
+    SEED_DEVICES: |
+      [
+        {"device_id":"device-1","device_type":"jetson_orin","ip_address":"192.168.1.10"},
+        {"device_id":"device-2","device_type":"raspberry_pi","ip_address":"192.168.1.11"}
+      ]
+  # Relax security context only if needed (e.g., PVC permission issues)
+  podSecurityContext:
+    fsGroup: 1000
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsNonRoot: false
+    allowPrivilegeEscalation: false
+  persistence:
+    enabled: true
+    size: 256Mi
+  serviceMonitor:
+    enabled: false
+
+exporter:
+  enabled: true
+  image:
+    repository: your-registry/edge-metrics-exporter
+    tag: "v1.1.6"
+  commonEnv:
+    CONFIG_SERVER_URL: "http://edge-metrics-server.monitoring.svc.cluster.local:8081"
+    METRICS_PORT: "9102"
+    RELOAD_PORT: "9101"
+    # Map device_id to device_type for the exporter.
+    # Must match the device_type values used in SEED_DEVICES above.
+    DEVICE_TYPE_MAP: |
+      {"device-1":"jetson_orin","device-2":"raspberry_pi"}
+  tolerations:
+    - key: node-role.kubernetes.io/edge
+      effect: NoSchedule
+  profiles:
+    jetson:
+      enabled: true
+      securityContext:
+        runAsUser: 0
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+        allowPrivilegeEscalation: true
+        capabilities:
+          add: ["SYS_RAWIO"]
+    generic:
+      enabled: true
+      securityContext:
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+        allowPrivilegeEscalation: false
+  serviceMonitor:
+    enabled: true
+
+frontend:
+  enabled: true
+  image:
+    repository: your-registry/edge-metrics-front
+    tag: "v0.1.4"
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsNonRoot: false
+    allowPrivilegeEscalation: false

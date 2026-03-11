@@ -41,6 +41,22 @@ helm install edge-metrics charts/edge-metrics \
   --namespace monitoring --create-namespace
 ```
 
+### With Site-Specific Overrides
+
+For real deployments you need a site-specific values file with your device IPs, registry, and seed config:
+
+```bash
+cp charts/edge-metrics/values-cluster.example.yaml charts/edge-metrics/values-cluster.yaml
+# Edit values-cluster.yaml with your device IPs, registry, etc.
+
+helm install edge-metrics charts/edge-metrics \
+  -f charts/edge-metrics/values-prod.yaml \
+  -f charts/edge-metrics/values-cluster.yaml \
+  --namespace monitoring --create-namespace
+```
+
+> `values-cluster.yaml` is git-ignored. Use `values-cluster.example.yaml` as a starting template.
+
 ## Upgrading
 
 ```bash
@@ -54,6 +70,22 @@ helm uninstall edge-metrics --namespace monitoring
 ```
 
 ## Configuration
+
+### Values Layering
+
+| File | Purpose | Tracked |
+|------|---------|:-------:|
+| `values.yaml` | Subchart defaults (generic, safe for any cluster) | Yes |
+| `values-dev.yaml` | Development profile (emptyDir, latest tags, no monitoring) | Yes |
+| `values-prod.yaml` | Production profile (PVC, pinned tags, full observability) | Yes |
+| `values-cluster.example.yaml` | Template for site-specific overrides | Yes |
+| `values-cluster.yaml` | Your site-specific overrides (device IPs, registry, seeds) | **No** |
+
+Helm merges values left-to-right, so the rightmost `-f` file wins:
+
+```bash
+helm install edge-metrics . -f values-prod.yaml -f values-cluster.yaml
+```
 
 ### Global
 
