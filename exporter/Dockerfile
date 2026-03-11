@@ -8,7 +8,7 @@ FROM python:3.12-alpine
 LABEL org.opencontainers.image.source="https://github.com/noFlowWater/edge-metrics"
 
 RUN apk upgrade --no-cache && \
-    apk add --no-cache tini && \
+    apk add --no-cache tini gcompat && \
     rm -rf /usr/local/lib/python3.12/ensurepip \
            /usr/local/lib/python3.12/idlelib \
            /usr/local/bin/pip* \
