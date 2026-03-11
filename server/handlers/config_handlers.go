@@ -6,10 +6,23 @@ import (
 	"edge-metrics-server/models"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
+
+func isValidIP(ip string) bool {
+	return net.ParseIP(ip) != nil
+}
+
+func isSSRFSafe(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return false
+	}
+	return !parsed.IsLoopback() && !parsed.IsLinkLocalUnicast() && !parsed.IsLinkLocalMulticast() && !parsed.IsMulticast()
+}
 
 // GetConfig handles GET /config/:device_id
 func (h *Handler) GetConfig(c *gin.Context) {
