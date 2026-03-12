@@ -87,6 +87,6 @@ serviceMonitor:
   # -- Create ServiceMonitor
   enabled: false
   # -- Scrape interval
-  interval: 30s
+  interval: 10s
   # -- Scrape timeout
-  scrapeTimeout: 15s
+  scrapeTimeout: 8s
