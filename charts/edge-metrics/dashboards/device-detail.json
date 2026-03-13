@@ -63,14 +63,32 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "jetson_power_vdd_gpu_soc_watts{hostname=\"$device_id\"}",
+          "expr": "jetson_power_vdd_gpu_soc_watts{hostname=\"$hostname\"}",
           "legendFormat": "VDD GPU SOC",
           "range": true
         },
         {
           "refId": "B",
-          "expr": "jetson_power_vdd_cpu_cv_watts{hostname=\"$device_id\"}",
+          "expr": "jetson_power_vdd_cpu_cv_watts{hostname=\"$hostname\"}",
           "legendFormat": "VDD CPU CV",
+          "range": true
+        },
+        {
+          "refId": "C",
+          "expr": "server_power_package_0_watts{hostname=\"$hostname\"}",
+          "legendFormat": "CPU Package (RAPL)",
+          "range": true
+        },
+        {
+          "refId": "D",
+          "expr": "server_power_core_watts{hostname=\"$hostname\"}",
+          "legendFormat": "CPU Cores (RAPL)",
+          "range": true
+        },
+        {
+          "refId": "E",
+          "expr": "label_replace(DCGM_FI_DEV_POWER_USAGE{Hostname=\"$hostname\"}, \"hostname\", \"$1\", \"Hostname\", \"(.*)\")",
+          "legendFormat": "GPU",
           "range": true
         }
       ],
@@ -114,13 +132,13 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "jetson_temp_cpu_celsius{hostname=\"$device_id\"}",
+          "expr": "jetson_temp_cpu_celsius{hostname=\"$hostname\"} or server_temp_package_celsius{hostname=\"$hostname\"}",
           "legendFormat": "CPU",
           "range": true
         },
         {
           "refId": "B",
-          "expr": "jetson_temp_gpu_celsius{hostname=\"$device_id\"}",
+          "expr": "jetson_temp_gpu_celsius{hostname=\"$hostname\"} or label_replace(DCGM_FI_DEV_GPU_TEMP{Hostname=\"$hostname\"}, \"hostname\", \"$1\", \"Hostname\", \"(.*)\")",
           "legendFormat": "GPU",
           "range": true
         }
@@ -167,7 +185,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "jetson_ram_used_mb{hostname=\"$device_id\"} / jetson_ram_total_mb{hostname=\"$device_id\"} * 100",
+          "expr": "jetson_ram_used_mb{hostname=\"$hostname\"} / jetson_ram_total_mb{hostname=\"$hostname\"} * 100 or server_ram_used_percent{hostname=\"$hostname\"}",
           "legendFormat": "RAM %",
           "instant": true
         }
@@ -210,13 +228,13 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "jetson_cpu_utilization_percent{hostname=\"$device_id\"}",
+          "expr": "jetson_cpu_utilization_percent{hostname=\"$hostname\"} or server_cpu_avg_usage_percent{hostname=\"$hostname\"}",
           "legendFormat": "CPU Utilization",
           "range": true
         },
         {
           "refId": "B",
-          "expr": "jetson_gpu_utilization_percent{hostname=\"$device_id\"}",
+          "expr": "jetson_gpu_utilization_percent{hostname=\"$hostname\"} or label_replace(DCGM_FI_DEV_GPU_UTIL{Hostname=\"$hostname\"}, \"hostname\", \"$1\", \"Hostname\", \"(.*)\")",
           "legendFormat": "GPU Utilization",
           "range": true
         }
@@ -267,11 +285,11 @@
         "includeAll": false,
         "label": "Device",
         "multi": false,
-        "name": "device_id",
+        "name": "hostname",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(jetson_temp_cpu_celsius, hostname)"
+          "query": "label_values(shelly_power_total_watts, hostname)"
         },
         "refresh": 2,
         "regex": "",

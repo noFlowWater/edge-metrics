@@ -63,7 +63,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(count by (hostname)(jetson_temp_cpu_celsius))",
+          "expr": "count(count by (hostname)(shelly_power_total_watts))",
           "legendFormat": "",
           "instant": true
         }
@@ -103,7 +103,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(shelly_power_watts)",
+          "expr": "sum(shelly_power_total_watts)",
           "legendFormat": "",
           "instant": true
         }
@@ -145,7 +145,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "shelly_power_watts",
+          "expr": "shelly_power_total_watts",
           "legendFormat": "{{ hostname }}",
           "range": true
         }
@@ -190,7 +190,13 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "jetson_temp_gpu_celsius{hostname=~\"$device_id\"}",
+          "expr": "jetson_temp_gpu_celsius{hostname=~\"$hostname\"}",
+          "legendFormat": "{{ hostname }}",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "expr": "label_replace(DCGM_FI_DEV_GPU_TEMP{Hostname=~\"$hostname\"}, \"hostname\", \"$1\", \"Hostname\", \"(.*)\")",
           "legendFormat": "{{ hostname }}",
           "range": true
         }
@@ -239,11 +245,11 @@
         "includeAll": true,
         "label": "Device",
         "multi": true,
-        "name": "device_id",
+        "name": "hostname",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(jetson_temp_cpu_celsius, hostname)"
+          "query": "label_values(shelly_power_total_watts, hostname)"
         },
         "refresh": 2,
         "regex": "",
