@@ -400,7 +400,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jetson_power_pom_5v_in_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} or jetson_power_vdd_in_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} or sum by(hostname, device_type) ({__name__=~\"jetson_power_(vdd_cpu_cv|vdd_gpu_soc|vddq_vdd2_1v8ao|vin_sys_5v0)_watts\", device_type=~\"$device_type\", hostname=\"$hostname\"})",
+          "expr": "jetson_power_pom_5v_in_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} or jetson_power_vdd_in_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} or sum by(hostname, device_type) ({__name__=~\"jetson_power_(vdd_cpu_cv|vdd_gpu_soc|vddq_vdd2_1v8ao|vin_sys_5v0)_watts\", device_type=~\"$device_type\", hostname=\"$hostname\"}) or (server_power_package_0_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} + on(hostname) group_left(device_type) sum by(hostname) (label_replace(DCGM_FI_DEV_POWER_USAGE{Hostname=\"$hostname\"}, \"hostname\", \"$1\", \"Hostname\", \"(.*)\")))",
           "interval": "1s",
           "legendFormat": "Internal Total",
           "refId": "B"
@@ -504,6 +504,26 @@
           "interval": "1s",
           "legendFormat": "{{__name__}}",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "{__name__=~\"server_power_.*_watts\", device_type=~\"$device_type\", hostname=\"$hostname\"}",
+          "interval": "1s",
+          "legendFormat": "{{__name__}}",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "label_replace(DCGM_FI_DEV_POWER_USAGE{Hostname=\"$hostname\"}, \"hostname\", \"$1\", \"Hostname\", \"(.*)\")",
+          "interval": "1s",
+          "legendFormat": "gpu_power_watts",
+          "refId": "C"
         }
       ],
       "title": "$hostname - Internal Power Rail Breakdown",
@@ -628,7 +648,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "jetson_power_pom_5v_in_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} or jetson_power_vdd_in_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} or sum by(hostname, device_type) ({__name__=~\"jetson_power_(vdd_cpu_cv|vdd_gpu_soc|vddq_vdd2_1v8ao|vin_sys_5v0)_watts\", device_type=~\"$device_type\", hostname=\"$hostname\"})",
+          "expr": "jetson_power_pom_5v_in_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} or jetson_power_vdd_in_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} or sum by(hostname, device_type) ({__name__=~\"jetson_power_(vdd_cpu_cv|vdd_gpu_soc|vddq_vdd2_1v8ao|vin_sys_5v0)_watts\", device_type=~\"$device_type\", hostname=\"$hostname\"}) or (server_power_package_0_watts{device_type=~\"$device_type\", hostname=\"$hostname\"} + on(hostname) group_left(device_type) sum by(hostname) (label_replace(DCGM_FI_DEV_POWER_USAGE{Hostname=\"$hostname\"}, \"hostname\", \"$1\", \"Hostname\", \"(.*)\")))",
           "hide": true,
           "interval": "1s",
           "refId": "B"
