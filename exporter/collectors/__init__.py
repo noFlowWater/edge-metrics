@@ -50,6 +50,10 @@ def get_collector(device_type: str, config: Dict) -> BaseCollector:
         from .lattepanda import LattePandaCollector
         return LattePandaCollector(config)
 
+    elif device_type == "edge_server":
+        from .edge_server import EdgeServerCollector
+        return EdgeServerCollector(config)
+
     elif device_type == "shelly":
         from .shelly import ShellyCollector
         return ShellyCollector(config)
@@ -62,7 +66,7 @@ def get_collector(device_type: str, config: Dict) -> BaseCollector:
         raise ValueError(
             f"Unsupported device type: {device_type}. "
             f"Supported types: jetson_orin, jetson_xavier, jetson_nano, raspberry_pi, "
-            f"orange_pi, lattepanda, shelly, stub"
+            f"orange_pi, lattepanda, edge_server, shelly, stub"
         )
 
 
