@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
 
       # helm-unittest does not sign releases yet, so --verify=false is required on Helm v4
       # Tracking: https://github.com/helm-unittest/helm-unittest/issues/777
