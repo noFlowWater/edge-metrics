@@ -82,3 +82,61 @@ tests:
       - equal:
           path: spec.template.spec.dnsPolicy
           value: ClusterFirstWithHostNet
+
+  # --- edge-server profile tests (disabled by default, must enable explicitly) ---
+  # Alphabetical order with all 3 enabled: edge-server=0, generic=1, jetson=2
+
+  - it: should generate 3 DaemonSets when all profiles enabled
+    set:
+      profiles.edge-server.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 3
+
+  - it: edge-server profile should have correct nodeSelector
+    set:
+      profiles.edge-server.enabled: true
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.device-family
+          value: edge-server
+
+  - it: edge-server profile should be privileged
+    set:
+      profiles.edge-server.enabled: true
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.privileged
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsUser
+          value: 0
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsNonRoot
+          value: false
+
+  - it: edge-server profile should mount /sys and /host/proc
+    set:
+      profiles.edge-server.enabled: true
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /sys
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].readOnly
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /host/proc
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].readOnly
+          value: true
+      - equal:
+          path: spec.template.spec.volumes[0].hostPath.path
+          value: /sys
+      - equal:
+          path: spec.template.spec.volumes[1].hostPath.path
+          value: /proc
