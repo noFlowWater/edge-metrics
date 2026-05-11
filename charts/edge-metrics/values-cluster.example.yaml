@@ -24,8 +24,9 @@ server:
     APP_VERSION: "v0.2.2"
     # List your edge devices here. Each entry needs:
     #   device_id  — unique hostname or identifier
-    #   device_type — one of: jetson_orin, jetson_nano, jetson_xavier,
-    #                 raspberry_pi, orange_pi, lattepanda, or your custom type
+    #   device_type — one of: jetson_orin, jetson_orin_nano, jetson_nano,
+    #                 jetson_xavier, raspberry_pi, orange_pi, lattepanda,
+    #                 or your custom type
     #   ip_address — reachable IP from the cluster network
     SEED_DEVICES: |
       [

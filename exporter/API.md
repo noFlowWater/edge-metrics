@@ -9,6 +9,7 @@ The exporter supports multiple Jetson device types with device-specific metric p
 | Device Type | Config Value | Collector Class | Description |
 |-------------|--------------|-----------------|-------------|
 | Jetson Orin | `jetson_orin` | `JetsonOrinCollector` | NVIDIA Jetson Orin devices |
+| Jetson Orin Nano | `jetson_orin_nano` | `JetsonOrinNanoCollector` | NVIDIA Jetson Orin Nano devices |
 | Jetson Xavier | `jetson_xavier` | `JetsonXavierCollector` | NVIDIA Jetson Xavier devices |
 | Jetson Nano | `jetson_nano` | `JetsonNanoCollector` | NVIDIA Jetson Nano devices |
 | Generic Jetson | `jetson` | `JetsonOrinCollector` (fallback) | Generic fallback, uses Orin parsing |
@@ -26,6 +27,9 @@ JetsonCollector (Base)
 JetsonOrinCollector(JetsonCollector)
   └─ _parse_all_metrics()    # Orin-specific parsing
 
+JetsonOrinNanoCollector(JetsonCollector)
+  └─ _parse_all_metrics()    # Orin Nano-specific parsing
+
 JetsonXavierCollector(JetsonCollector)
   └─ _parse_all_metrics()    # Xavier-specific parsing
 
@@ -36,6 +40,7 @@ JetsonNanoCollector(JetsonCollector)
 **Implementation:**
 - [collectors/jetson.py](collectors/jetson.py) - Base class with common tegrastats execution
 - [collectors/jetson_orin.py](collectors/jetson_orin.py) - Orin-specific parsing
+- [collectors/jetson_orin_nano.py](collectors/jetson_orin_nano.py) - Orin Nano-specific parsing
 - [collectors/jetson_xavier.py](collectors/jetson_xavier.py) - Xavier-specific parsing
 - [collectors/jetson_nano.py](collectors/jetson_nano.py) - Nano-specific parsing
 - [collectors/__init__.py](collectors/__init__.py) - Factory pattern for collector selection
@@ -48,6 +53,22 @@ JetsonNanoCollector(JetsonCollector)
 - **Temperature Sensors:** CPU, GPU, SOC0, SOC1, SOC2, TBOARD, TDIODE, TJ
 - **GPU:** 2 frequency clusters
 - **File:** [collectors/jetson_orin.py](collectors/jetson_orin.py)
+
+##### Jetson Orin Nano
+- **CPU Cores:** 6 cores
+- **Power Rails:** VDD_IN, VDD_CPU_GPU_CV, VDD_SOC
+- **Temperature Sensors:** cpu, gpu, tj, soc0, soc1, soc2
+- **GPU:** Usage may be reported without frequency (GR3D_FREQ 0%)
+- **SWAP:** Includes cached memory info (SWAP 0/3810MB (cached 0MB))
+- **File:** [collectors/jetson_orin_nano.py](collectors/jetson_orin_nano.py)
+
+**Example tegrastats output:**
+```
+RAM 3423/7620MB (lfb 78x4MB) SWAP 0/3810MB (cached 0MB)
+CPU [2%@729,6%@729,2%@729,1%@729,2%@729,2%@729] GR3D_FREQ 0%
+cpu@45.531C soc2@44.781C soc0@45.937C gpu@46.468C tj@46.468C soc1@46C
+VDD_IN 3311mW/3311mW VDD_CPU_GPU_CV 524mW/524mW VDD_SOC 1008mW/1008mW
+```
 
 ##### Jetson Xavier
 - **CPU Cores:** 6 cores (typically 4 active + 2 off)
@@ -87,7 +108,7 @@ POM_5V_IN 2003/2003 POM_5V_GPU 0/0 POM_5V_CPU 320/320
 
 ```yaml
 # config.yaml
-device_type: jetson_orin    # or jetson_xavier, jetson_nano, or jetson
+device_type: jetson_orin    # or jetson_orin_nano, jetson_xavier, jetson_nano, or jetson
 interval: 1
 port: 9102
 reload_port: 9101
@@ -104,7 +125,7 @@ metrics:
 
 ### Common Jetson Metrics
 
-All Jetson devices (Orin and Xavier) support these metric categories:
+All Jetson device collectors support these metric categories:
 
 #### Power Metrics
 | Metric Pattern | Description | Unit | Example |
@@ -113,6 +134,7 @@ All Jetson devices (Orin and Xavier) support these metric categories:
 | `jetson_power_{rail}_avg_watts` | Average power consumption | Watts | `jetson_power_vdd_cpu_cv_avg_watts` |
 
 **Orin Rails:** `vdd_gpu_soc`, `vdd_cpu_cv`, `vddq_vdd2_1v8ao`, `vin_sys_5v0`
+**Orin Nano Rails:** `vdd_in`, `vdd_cpu_gpu_cv`, `vdd_soc`
 **Xavier Rails:** `vdd_in`, `vdd_cpu_gpu_cv`, `vdd_soc`
 **Nano Rails:** `pom_5v_in`, `pom_5v_gpu`, `pom_5v_cpu`
 
@@ -122,6 +144,7 @@ All Jetson devices (Orin and Xavier) support these metric categories:
 | `jetson_temp_{sensor}_celsius` | Temperature reading | Celsius | `jetson_temp_cpu_celsius` |
 
 **Orin Sensors:** `cpu`, `gpu`, `soc0`, `soc1`, `soc2`, `tboard`, `tdiode`, `tj`
+**Orin Nano Sensors:** `cpu`, `gpu`, `tj`, `soc0`, `soc1`, `soc2`
 **Xavier Sensors:** `aux`, `cpu`, `ao`, `gpu`, `pmic`
 **Nano Sensors:** `pll`, `cpu`, `pmic`, `gpu`, `ao`, `thermal`
 
@@ -358,6 +381,27 @@ metrics:
   jetson_cpu_avg_usage_percent: true
 ```
 
+### Configure for Jetson Orin Nano
+
+```yaml
+# config.yaml
+device_type: jetson_orin_nano
+interval: 1
+port: 9102
+reload_port: 9101
+
+metrics:
+  jetson_power_vdd_in_watts: true              # Orin Nano total input rail
+  jetson_power_vdd_cpu_gpu_cv_watts: true      # Orin Nano CPU/GPU/CV rail
+  jetson_power_vdd_soc_watts: true             # Orin Nano SoC rail
+  jetson_temp_cpu_celsius: true
+  jetson_temp_gpu_celsius: true
+  jetson_temp_tj_celsius: true
+  jetson_cpu_avg_usage_percent: true
+  jetson_gpu_usage_percent: true               # Frequency may be absent on JetPack 6
+  jetson_swap_cached_mb: true
+```
+
 ### Configure for Jetson Xavier
 
 ```yaml
@@ -461,7 +505,7 @@ sum by (device_type) (jetson_power_vdd_gpu_soc_watts)
 }
 ```
 
-**Solution:** Use supported device types: `jetson_orin`, `jetson_xavier`, `jetson`
+**Solution:** Use supported device types: `jetson_orin`, `jetson_orin_nano`, `jetson_xavier`, `jetson_nano`, `jetson`
 
 #### tegrastats Not Available
 ```

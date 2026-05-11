@@ -4,7 +4,7 @@ Prometheus exporter for edge device power consumption monitoring. Deployed as K8
 
 ## Features
 
-- **Multiple Device Support**: Jetson Orin/Xavier/Nano, Raspberry Pi, Orange Pi, LattePanda, Shelly smart plugs
+- **Multiple Device Support**: Jetson Orin/Orin Nano/Xavier/Nano, Raspberry Pi, Orange Pi, LattePanda, Shelly smart plugs
 - **Dynamic Config Reload**: Update configuration without restarting the pod
 - **Central Config Server**: Manage all device configurations from one place (with bidirectional sync)
 - **Local Fallback**: Continue operating with local config if central server is unavailable
@@ -17,7 +17,7 @@ Prometheus exporter for edge device power consumption monitoring. Deployed as K8
 
 | Device | Status | Method |
 |--------|--------|--------|
-| Jetson Orin/Xavier/Nano | Implemented | tegrastats |
+| Jetson Orin/Orin Nano/Xavier/Nano | Implemented | tegrastats |
 | Shelly Plug | Implemented | WebSocket + HTTP API |
 | Raspberry Pi | TODO | INA260 I2C |
 | Orange Pi | TODO | sysfs |
