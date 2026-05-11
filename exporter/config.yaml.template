@@ -4,7 +4,8 @@
 # Minimal configuration to keep the exporter running.
 
 # Device type - determines which collector to use
-# Options: jetson_orin, jetson_xavier, raspberry_pi, orange_pi, lattepanda, shelly
+# Options: jetson_orin, jetson_orin_nano, jetson_xavier, jetson_nano,
+#          raspberry_pi, orange_pi, lattepanda, shelly
 device_type: "jetson_orin"
 
 

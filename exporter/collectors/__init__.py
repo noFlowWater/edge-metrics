@@ -25,6 +25,10 @@ def get_collector(device_type: str, config: Dict) -> BaseCollector:
         from .jetson_orin import JetsonOrinCollector
         return JetsonOrinCollector(config)
 
+    elif device_type in ("jetson_orin_nano", "orin_nano"):
+        from .jetson_orin_nano import JetsonOrinNanoCollector
+        return JetsonOrinNanoCollector(config)
+
     elif device_type == "jetson_xavier":
         from .jetson_xavier import JetsonXavierCollector
         return JetsonXavierCollector(config)
@@ -65,8 +69,9 @@ def get_collector(device_type: str, config: Dict) -> BaseCollector:
     else:
         raise ValueError(
             f"Unsupported device type: {device_type}. "
-            f"Supported types: jetson_orin, jetson_xavier, jetson_nano, raspberry_pi, "
-            f"orange_pi, lattepanda, edge_server, shelly, stub"
+            f"Supported types: jetson_orin, jetson_orin_nano, jetson_xavier, "
+            f"jetson_nano, raspberry_pi, orange_pi, lattepanda, edge_server, "
+            f"shelly, stub"
         )
 
 
