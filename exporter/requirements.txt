@@ -7,7 +7,7 @@ prometheus-client>=0.19.0
 PyYAML>=6.0
 
 # HTTP client for central Config API server
-requests>=2.31.0
+requests>=2.34.2
 
 # WebSocket server for Shelly plug connections
 websockets==16.0
